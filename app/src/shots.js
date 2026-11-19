@@ -27,6 +27,12 @@ const SAMPLES_BY_KEY = {
   neon: 'samples/media-generation-neon-0-3e780550-f969-4fd0-9588-3129c57b47bf.jpg',
   detail: 'samples/media-generation-detail-0-15f66890-fad8-431e-9daa-17cd1d5fcbf8.jpg',
   desert: 'samples/media-generation-media-generation-desert-0-0-0a350fe7-a7ce-4223-9abc-c3d5fddbe128.jpg',
+  // New distinct scenes (Sand's 08:06 + 08:07 fixes): each is a different
+  // photo and a different condition, so no strip ever repeats a look.
+  womaninside: 'samples/media-generation-woman-inside-0-032b851c-2e53-4798-a1a3-6b648868c93c.jpg',
+  beachday: 'samples/media-generation-beach-day-0-cbf349ba-457e-48ff-a4dc-2d402c285bba.jpg',
+  rooftop: 'samples/media-generation-rooftop-dusk-0-94866e7c-e26f-4a72-8d61-d36aa416924c.jpg',
+  desertnoon: 'samples/media-generation-desert-noon-0-41dfc5d7-5556-4985-8a80-5408ee2d0b62.jpg',
 };
 const DEFAULT_ORDER = ['chase', 'driver', 'beach', 'police', 'woman', 'neon', 'detail', 'desert'];
 

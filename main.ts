@@ -37,8 +37,8 @@ const DOSSIER_CAPS = {
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-/** Copy a tree that may or may not exist yet; report what landed. */
-function copyIfPresent(from: string, to: string, label: string): number {
+/** Copy a tree that may or may not exist yet; report how many top-level entries landed. */
+function copyIfPresent(from: string, to: string): number {
   if (!existsSync(from)) return 0;
   mkdirSync(to, { recursive: true });
   cpSync(from, to, { recursive: true });
@@ -46,8 +46,8 @@ function copyIfPresent(from: string, to: string, label: string): number {
 }
 
 mkdirSync(out, { recursive: true });
-const appEntries = copyIfPresent(join(here, 'app'), join(out, 'app'), 'app');
-const shotEntries = copyIfPresent(join(here, 'screenshots'), join(out, 'screenshots'), 'screenshots');
+const appEntries = copyIfPresent(join(here, 'app'), join(out, 'app'));
+const shotEntries = copyIfPresent(join(here, 'screenshots'), join(out, 'screenshots'));
 
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, DOSSIER_CAPS));
 

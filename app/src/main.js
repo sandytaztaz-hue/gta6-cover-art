@@ -10,7 +10,15 @@ import {
   loadImage, fontsReady,
 } from './cover.js';
 
-const SAMPLES = ['samples/chase.svg', 'samples/boulevard.jpg', 'samples/pier.jpg'];
+// Five photo-real samples, made with an image model: the chase hero first,
+// then the four panel photos (driver, beach, detail, neon).
+const SAMPLES = [
+  'samples/media-generation-chase-0-2ec34be2-e327-42be-a54d-cccb749df467.jpg',
+  'samples/media-generation-driver-0-1c1bf90c-d164-4bc3-8d77-0d380142b27d.jpg',
+  'samples/media-generation-beach-0-9aa1c1c1-ce91-4ab0-b578-97cf5d9d6b67.jpg',
+  'samples/media-generation-detail-0-15f66890-fad8-431e-9daa-17cd1d5fcbf8.jpg',
+  'samples/media-generation-neon-0-3e780550-f969-4fd0-9588-3129c57b47bf.jpg',
+];
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -114,16 +122,15 @@ function placePhoto(index, img, name, crop) {
   };
 }
 
-/** Load the built-in samples into the panels: the drawn chase hero first,
- *  then the two photos, alternating crops. */
+/** Load the built-in samples into the panels: the photo-real chase hero
+ *  first, then the four panel photos, one per panel. */
 export async function loadSamples() {
   try {
-    const [chase, a, b] = await Promise.all(SAMPLES.map((s) => loadImage(s)));
+    const imgs = await Promise.all(SAMPLES.map((s) => loadImage(s)));
     const n = state.panels.length;
-    const imgs = [chase, a, b];
-    const names = ['chase.svg', 'boulevard.jpg', 'pier.jpg'];
+    const names = ['chase.jpg', 'driver.jpg', 'beach.jpg', 'detail.jpg', 'neon.jpg'];
     for (let i = 0; i < n; i++) {
-      placePhoto(i, imgs[i % 3], names[i % 3]);
+      placePhoto(i, imgs[i % imgs.length], names[i % names.length]);
     }
     selected = 0;
     refreshSteps();

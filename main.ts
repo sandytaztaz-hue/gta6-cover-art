@@ -9,8 +9,10 @@
 // The cover maker itself: four multi-panel layouts (Diagonal, Grid,
 // Hero + strip, Five panel), four canvas grades (Sunset, Neon, Vice Night,
 // Golden Hour), a big outlined glow caption, and full-resolution PNG export
-// at 1080×1080, 1080×1350 and 1920×1080. Its two sample photos
-// (app/samples/) were made for make.fun with an image model and are free to use.
+// at 1080×1080, 1080×1350 and 1920×1080. Its five sample photos
+// (app/samples/) — a photo-real chase hero (orange supercar + sport bike on
+// a sunny palm boulevard) plus four panel photos (driver, beach, detail,
+// neon) — were made with an image model and are free to use.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
@@ -52,6 +54,6 @@ const shotEntries = copyIfPresent(join(here, 'screenshots'), join(out, 'screensh
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, DOSSIER_CAPS));
 
 console.log(
-  `Duskline Cover Studio handed in: ${appEntries} app entries, ` +
+  `Duskline Cover Studio — VICE PURSUIT handed in: ${appEntries} app entries, ` +
   `${shotEntries} screenshots, dossier written to ${join(out, 'dossier.json')}`,
 );

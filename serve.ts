@@ -1,6 +1,7 @@
 // A tiny static server for app/ (Node 22, standard library only), so the Duskline
 // Cover Studio entry can be tried locally without a build step: `node serve.ts`
-// serves app/ on http://localhost:8080.
+// serves app/ on http://localhost:8080. It also serves the photo-real sample
+// photos under app/samples/, so the editor and the ?shot= states load instantly.
 // It sends the MIME types an offline web app needs, refuses any path outside app/, and otherwise
 // does nothing clever: this is a development convenience, not a web server for the internet.
 import { createReadStream, statSync } from 'node:fs';
@@ -25,6 +26,7 @@ const MIME: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.gif': 'image/gif',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',

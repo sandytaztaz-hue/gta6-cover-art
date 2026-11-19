@@ -4,6 +4,9 @@
 // and the full-resolution export, so what you see is exactly what the PNG holds.
 // Layouts cut the frame into panels, grades tint the whole frame, and a big
 // outlined caption with a sunset sky band gives every cover the same signature.
+// The default cover is the five-panel Golden Hour look: the photo-real chase
+// hero (orange supercar + sport bike, palm boulevard) fills the big panel,
+// four more photos fill the strip, and the VICE PURSUIT headline sits below.
 
 export const SIZES = {
   square: { w: 1080, h: 1080, label: '1080 × 1080 (post)' },
@@ -35,18 +38,19 @@ export const CAPTION_COLORS = {
 export const CAPTION_FONT = '"Bebas Neue", "Anton", "Archivo Black", sans-serif';
 export const SUB_FONT = '"Anton", "Archivo Black", sans-serif';
 
-/** A fresh default state: five-panel golden-hour cover, ready for a photo. */
+/** A fresh default state: five-panel Golden Hour cover, photo-real chase
+ *  hero on top, VICE PURSUIT headline, ready for a photo. */
 export function defaultState() {
   return {
-    layout: 'diagonal',
-    grade: 'sunset',
+    layout: 'five',
+    grade: 'golden',
     intensity: 0.75,
     grain: true,
     grainAmount: 0.5,
     vignette: true,
     size: 'landscape',
-    caption: 'SUNSET HEIST',
-    subcaption: 'A SUNSET STORY',
+    caption: 'VICE PURSUIT',
+    subcaption: 'EVERY MILE A GETAWAY',
     captionColor: 'white',
     captionPosition: 'bottom',
     // One slot per panel of the current layout; a slot holds
@@ -354,9 +358,10 @@ function skyBand(ctx, grade, intensity, W, H) {
   fade.addColorStop(1, 'rgba(0,0,0,0.55)');
   ctx.fillStyle = fade;
   ctx.fillRect(0, bandH * 0.55, W, bandH * 0.45);
-  // The sun: a soft glowing disc sitting in the band.
-  const sunR = Math.round(H * 0.085);
-  const sunX = Math.round(W * 0.80);
+  // The sun: a soft glowing disc sitting in the band, kept to the LEFT of
+  // the frame so it never covers the chase hero's rider on the right.
+  const sunR = Math.round(H * 0.07);
+  const sunX = Math.round(W * 0.14);
   const sunY = Math.round(bandH * 0.52);
   const sun = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 2.2);
   sun.addColorStop(0, 'rgba(255,240,180,0.95)');

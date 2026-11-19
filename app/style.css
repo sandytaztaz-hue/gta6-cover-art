@@ -1,4 +1,5 @@
-/* Duskline Cover Studio — dark editor UI, neon accents. */
+/* Duskline Cover Studio — dark editor UI, neon accents.
+   The preview shows the photo-real chase hero and the VICE PURSUIT cover. */
 
 @font-face {
   font-family: "Bebas Neue";
@@ -229,6 +230,7 @@ input[type="range"] { width: 100%; accent-color: var(--pink); }
   border-radius: 8px;
   cursor: crosshair;
   touch-action: none;
+  box-shadow: 0 0 0 1px rgba(255, 46, 136, 0.25), 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
 .panel-bar {

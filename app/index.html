@@ -3,20 +3,105 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<title>Sunset Cover Studio — GTA-style multi-panel cover maker</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
+  <section class="controls" aria-label="Cover controls">
+    <h1>Sunset Cover Studio</h1>
+    <p class="tagline">Turn any photo into a bold multi-panel cover — pick a layout, add a caption, export a full-resolution PNG. Everything runs offline in your browser; no photo ever leaves your device.</p>
+    <ol class="steps">
+      <li><strong>1</strong> Add a photo</li>
+      <li><strong>2</strong> Pick a layout + caption</li>
+      <li><strong>3</strong> Export</li>
+    </ol>
+
+    <fieldset>
+      <legend>Photo</legend>
+      <label class="file">Add photos <input id="photos" type="file" accept="image/*" multiple></label>
+      <div class="row">
+        <button id="sample-boulevard" type="button">Try boulevard</button>
+        <button id="sample-pier" type="button">Try pier</button>
+        <button id="sample-both" type="button">Try both</button>
+      </div>
+      <div class="row" role="group" aria-label="How photos fill the panels">
+        <button id="fill-one" type="button" aria-pressed="true">One photo, all panels</button>
+        <button id="fill-each" type="button" aria-pressed="false">Each panel its own</button>
+      </div>
+      <p class="hint">Drag the preview to reposition the photo in a panel. <span id="panel-count">3 panels</span></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Layout</legend>
+      <div class="row" id="layouts" role="group" aria-label="Layout">
+        <button type="button" data-value="diagonal" aria-pressed="true">Diagonal</button>
+        <button type="button" data-value="grid" aria-pressed="false">Grid</button>
+        <button type="button" data-value="hero" aria-pressed="false">Hero + strip</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Caption</legend>
+      <label>Caption <input id="caption" type="text" maxlength="40" value="SUNSET HEIST"></label>
+      <label>Sub-caption <input id="sub" type="text" maxlength="40" value="VICE CITY • 2026"></label>
+      <div class="row" id="colors" role="group" aria-label="Caption colour">
+        <button type="button" data-value="white" aria-pressed="true">White</button>
+        <button type="button" data-value="pink" aria-pressed="false">Neon pink</button>
+        <button type="button" data-value="cyan" aria-pressed="false">Cyan</button>
+        <button type="button" data-value="gold" aria-pressed="false">Gold</button>
+      </div>
+      <label>Position
+        <select id="pos">
+          <option value="bottom" selected>Bottom</option>
+          <option value="top">Top</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Grade</legend>
+      <div class="row" id="grades" role="group" aria-label="Colour grade">
+        <button type="button" data-value="sunset" aria-pressed="true">Sunset</button>
+        <button type="button" data-value="neon" aria-pressed="false">Neon</button>
+        <button type="button" data-value="night" aria-pressed="false">Vice Night</button>
+      </div>
+      <label>Intensity <span id="intensity-val">70%</span>
+        <input id="intensity" type="range" min="0" max="100" value="70">
+      </label>
+      <label class="check"><input id="grain" type="checkbox" checked> Film grain</label>
+      <label class="check"><input id="vignette" type="checkbox" checked> Vignette</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Panel</legend>
+      <p class="hint" id="active-panel">Panel 1 of 3</p>
+      <label>Zoom <span id="zoom-val">100%</span>
+        <input id="zoom" type="range" min="1" max="3" step="0.05" value="1">
+      </label>
+      <label>Fit
+        <select id="fit">
+          <option value="cover" selected>Cover (fill the panel)</option>
+          <option value="fit">Fit (whole photo visible)</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Size</legend>
+      <div class="row" id="sizes" role="group" aria-label="Export size">
+        <button type="button" data-value="landscape" aria-pressed="true">1920 x 1080</button>
+        <button type="button" data-value="portrait" aria-pressed="false">1080 x 1350</button>
+        <button type="button" data-value="square" aria-pressed="false">1080 x 1080</button>
+      </div>
+    </fieldset>
+
+    <button id="export" type="button" class="export">Export PNG</button>
     <p id="status" role="status"></p>
   </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+  <section class="preview" aria-label="Live preview">
+    <canvas id="cover" width="1920" height="1080" aria-label="The cover preview"></canvas>
+  </section>
 </main>
 <script type="module" src="./src/main.js"></script>
 </body>

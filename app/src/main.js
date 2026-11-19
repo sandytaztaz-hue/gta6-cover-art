@@ -10,14 +10,29 @@ import {
   loadImage, fontsReady,
 } from './cover.js';
 
-// Five photo-real samples, made with an image model: the chase hero first,
-// then the four panel photos (driver, beach, detail, neon).
+// Eight photo-real samples, made with an image model — one distinct scene
+// per photo, so no cover ever repeats the same shot: the chase hero first,
+// then driver, beach, police chase, the woman by the Lambo, neon night
+// street, headlight detail, and desert highway at dusk.
 const SAMPLES = [
   'samples/media-generation-chase-0-2ec34be2-e327-42be-a54d-cccb749df467.jpg',
   'samples/media-generation-driver-0-1c1bf90c-d164-4bc3-8d77-0d380142b27d.jpg',
   'samples/media-generation-beach-0-9aa1c1c1-ce91-4ab0-b578-97cf5d9d6b67.jpg',
-  'samples/media-generation-detail-0-15f66890-fad8-431e-9daa-17cd1d5fcbf8.jpg',
+  'samples/media-generation-media-generation-police-0-0-9a162c3d-8751-4bd9-b694-80e9af009823.jpg',
+  'samples/media-generation-media-generation-woman-0-0-77ef31c1-710b-4f24-8e35-b10f48530de1.jpg',
   'samples/media-generation-neon-0-3e780550-f969-4fd0-9588-3129c57b47bf.jpg',
+  'samples/media-generation-detail-0-15f66890-fad8-431e-9daa-17cd1d5fcbf8.jpg',
+  'samples/media-generation-media-generation-desert-0-0-0a350fe7-a7ce-4223-9abc-c3d5fddbe128.jpg',
+];
+
+/** Short keys for the samples, in the same order — used by ?panels= and
+ *  ?photo= so a screenshot can pick a different lead photo per shot. */
+export const SAMPLE_KEYS = [
+  'chase', 'driver', 'beach', 'police', 'woman', 'neon', 'detail', 'desert',
+];
+const SAMPLE_NAMES = [
+  'chase.jpg', 'driver.jpg', 'beach.jpg', 'police.jpg',
+  'woman.jpg', 'neon.jpg', 'detail.jpg', 'desert.jpg',
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -122,15 +137,21 @@ function placePhoto(index, img, name, crop) {
   };
 }
 
-/** Load the built-in samples into the panels: the photo-real chase hero
- *  first, then the four panel photos, one per panel. */
-export async function loadSamples() {
+/** Load the built-in samples into the panels, one distinct photo per panel.
+ *  `order` is an optional array of sample keys (e.g. ['beach','woman',...])
+ *  that puts a chosen scene in the hero panel first; without it the default
+ *  chase-first order is used. */
+export async function loadSamples(order) {
   try {
-    const imgs = await Promise.all(SAMPLES.map((s) => loadImage(s)));
+    const idx = (order && order.length
+      ? order.map((k) => SAMPLE_KEYS.indexOf(k)).filter((i) => i >= 0)
+      : SAMPLE_KEYS.map((_, i) => i));
+    // Fill any missing slots with the remaining samples, still distinct.
+    for (let i = 0; i < SAMPLE_KEYS.length; i++) if (!idx.includes(i)) idx.push(i);
+    const imgs = await Promise.all(idx.map((i) => loadImage(SAMPLES[i])));
     const n = state.panels.length;
-    const names = ['chase.jpg', 'driver.jpg', 'beach.jpg', 'detail.jpg', 'neon.jpg'];
     for (let i = 0; i < n; i++) {
-      placePhoto(i, imgs[i % imgs.length], names[i % names.length]);
+      placePhoto(i, imgs[i % imgs.length], SAMPLE_NAMES[idx[i % idx.length]]);
     }
     selected = 0;
     refreshSteps();
@@ -281,6 +302,14 @@ function bindControls() {
       scheduleRender();
     });
   }
+  const wanted = $('wantedToggle');
+  if (wanted) {
+    wanted.checked = state.wantedStars > 0;
+    wanted.addEventListener('change', () => {
+      state.wantedStars = wanted.checked ? 5 : 0;
+      scheduleRender();
+    });
+  }
   const zoom = $('zoom');
   if (zoom) {
     zoom.addEventListener('input', () => {
@@ -401,6 +430,12 @@ export function applyParams(params) {
   }
   if (params.get('pos') === 'top' || params.get('pos') === 'bottom') {
     state.captionPosition = params.get('pos');
+  }
+  // Wanted stars: &stars=0..5 (5 = full five-star chase). The police-chase
+  // shot passes 5; other shots leave it at 0.
+  const stars = Number(params.get('stars'));
+  if (Number.isFinite(stars)) {
+    state.wantedStars = Math.max(0, Math.min(5, Math.round(stars)));
   }
   syncPanels();
 }

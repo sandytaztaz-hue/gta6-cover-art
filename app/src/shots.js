@@ -5,7 +5,10 @@
 //               window.__shotReady once it is on screen.
 // ?shot=editor  the editor with the built-in samples loaded.
 // Both accept &layout= &grade= &size= &caption= &subcaption= &color= &pos=
-// and &photo= (chase | driver | beach | detail | neon | all). Without ?shot= the plain editor boots.
+// and &panels=<comma list of scene keys> (panel 1 = the hero/lead photo)
+// and &stars=0..5 for the GTA wanted-level HUD. Without ?shot= the plain
+// editor boots. Each shot leads with a DIFFERENT scene — the panels param
+// is what keeps the four screenshots from recycling the same photo.
 
 import { SIZES, renderCover, loadImage, fontsReady } from './cover.js';
 import { bootEditor, applyParams, loadSamples, state } from './main.js';
@@ -13,24 +16,36 @@ import { bootEditor, applyParams, loadSamples, state } from './main.js';
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
 
-/** The five photo-real samples, in panel order: the chase hero first
- *  (panel 1, the big panel), then driver, beach, detail, neon. */
-const SAMPLE_FILES = [
-  'samples/media-generation-chase-0-2ec34be2-e327-42be-a54d-cccb749df467.jpg',
-  'samples/media-generation-driver-0-1c1bf90c-d164-4bc3-8d77-0d380142b27d.jpg',
-  'samples/media-generation-beach-0-9aa1c1c1-ce91-4ab0-b578-97cf5d9d6b67.jpg',
-  'samples/media-generation-detail-0-15f66890-fad8-431e-9daa-17cd1d5fcbf8.jpg',
-  'samples/media-generation-neon-0-3e780550-f969-4fd0-9588-3129c57b47bf.jpg',
-];
+/** The eight photo-real samples, keyed by scene: one distinct photo per
+ *  panel, so no two screenshots — and no two panels — repeat a scene. */
+const SAMPLES_BY_KEY = {
+  chase: 'samples/media-generation-chase-0-2ec34be2-e327-42be-a54d-cccb749df467.jpg',
+  driver: 'samples/media-generation-driver-0-1c1bf90c-d164-4bc3-8d77-0d380142b27d.jpg',
+  beach: 'samples/media-generation-beach-0-9aa1c1c1-ce91-4ab0-b578-97cf5d9d6b67.jpg',
+  police: 'samples/media-generation-media-generation-police-0-0-9a162c3d-8751-4bd9-b694-80e9af009823.jpg',
+  woman: 'samples/media-generation-media-generation-woman-0-0-77ef31c1-710b-4f24-8e35-b10f48530de1.jpg',
+  neon: 'samples/media-generation-neon-0-3e780550-f969-4fd0-9588-3129c57b47bf.jpg',
+  detail: 'samples/media-generation-detail-0-15f66890-fad8-431e-9daa-17cd1d5fcbf8.jpg',
+  desert: 'samples/media-generation-media-generation-desert-0-0-0a350fe7-a7ce-4223-9abc-c3d5fddbe128.jpg',
+};
+const DEFAULT_ORDER = ['chase', 'driver', 'beach', 'police', 'woman', 'neon', 'detail', 'desert'];
 
-/** Which sample art fills the panels for a cover shot: all five photos,
- *  or one photo repeated when &photo= names a single sample. */
+/** Panel order for this shot: &panels=chase,driver,beach,police,neon picks
+ *  the photo for each panel in order (panel 1 = the hero/lead photo).
+ *  &photo=<key> is the old single-photo form, kept for compatibility. */
+function panelOrder() {
+  const panels = (params.get('panels') || '')
+    .split(',').map((s) => s.trim()).filter((k) => SAMPLES_BY_KEY[k]);
+  if (panels.length) return panels;
+  const single = params.get('photo');
+  if (single && SAMPLES_BY_KEY[single]) return [single];
+  return DEFAULT_ORDER;
+}
+
+/** Load the panel photos for this shot, in panel order. */
 async function samplePhotos() {
-  const want = params.get('photo') || 'all';
-  const photos = await Promise.all(SAMPLE_FILES.map((s) => loadImage(s)));
-  const single = { chase: 0, driver: 1, beach: 2, detail: 3, neon: 4 }[want];
-  if (single !== undefined) return [photos[single], photos[single]];
-  return photos;
+  const order = panelOrder();
+  return Promise.all(order.map((k) => loadImage(SAMPLES_BY_KEY[k])));
 }
 
 /** Cover-only mode: render the real export PNG and show it full-bleed. */
@@ -66,10 +81,13 @@ async function coverShot() {
   window.__shotReady = true;
 }
 
-/** Editor mode: boot the editor, load the samples, then signal ready. */
+/** Editor mode: boot the editor, load the samples in this shot's panel
+ *  order (so the editor shot leads with a different scene than the cover),
+ *  then signal ready. */
 async function editorShot() {
   await bootEditor(params);
-  await loadSamples();
+  const order = panelOrder();
+  await loadSamples(order);
   // Let the preview paint once before the screenshot is taken.
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.__shotReady = true;

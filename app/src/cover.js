@@ -53,6 +53,9 @@ export function defaultState() {
     subcaption: 'EVERY MILE A GETAWAY',
     captionColor: 'white',
     captionPosition: 'bottom',
+    // GTA wanted level: 0 = off, 3-5 = solid gold stars in the top-right
+    // corner. On by default for the police-chase scene, off otherwise.
+    wantedStars: 0,
     // One slot per panel of the current layout; a slot holds
     // { img, zoom, ox, oy, fit } or null when the panel is empty.
     panels: [null, null, null],
@@ -378,6 +381,55 @@ function skyBand(ctx, grade, intensity, W, H) {
   ctx.restore();
 }
 
+/** GTA wanted-level HUD: N solid gold stars on a dark pill, top-right.
+ *  Drawn as crisp vector shapes (never part of a photo) so the stars stay
+ *  countable at any export size. */
+export function drawWantedStars(ctx, W, H, count) {
+  const n = Math.max(0, Math.min(5, Math.round(count || 0)));
+  if (n === 0) return;
+  const starR = Math.max(14, Math.round(H * 0.038));
+  const gap = Math.round(starR * 0.45);
+  const padX = Math.round(starR * 0.9);
+  const padY = Math.round(starR * 0.55);
+  const pillW = n * starR * 2 + (n - 1) * gap + padX * 2;
+  const pillH = starR * 2 + padY * 2;
+  const x0 = W - pillW - Math.round(W * 0.025);
+  const y0 = Math.round(H * 0.03);
+  ctx.save();
+  // Dark semi-transparent backing pill so gold reads on any background.
+  ctx.fillStyle = 'rgba(8,6,16,0.72)';
+  ctx.strokeStyle = 'rgba(255,201,60,0.85)';
+  ctx.lineWidth = Math.max(2, Math.round(starR * 0.08));
+  ctx.beginPath();
+  ctx.roundRect(x0, y0, pillW, pillH, pillH / 2);
+  ctx.fill();
+  ctx.stroke();
+  // One five-pointed star per wanted level, solid gold with a dark edge.
+  const star = (cx, cy, r) => {
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const rr = i % 2 === 0 ? r : r * 0.42;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const px = cx + rr * Math.cos(a);
+      const py = cy + rr * Math.sin(a);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  };
+  for (let i = 0; i < n; i++) {
+    const cx = x0 + padX + starR + i * (starR * 2 + gap);
+    const cy = y0 + pillH / 2;
+    star(cx, cy, starR);
+    ctx.fillStyle = '#ffc93c';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(10,4,20,0.9)';
+    ctx.lineWidth = Math.max(2, Math.round(starR * 0.09));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** The big outlined glow caption + sub-caption. Auto-fits the frame width. */
 function drawCaption(ctx, state, W, H) {
   const text = (state.caption || '').trim().toUpperCase();
@@ -485,6 +537,9 @@ export function drawCover(ctx, state, W, H) {
   ctx.restore();
 
   drawCaption(ctx, state, W, H);
+
+  // Wanted stars sit above everything else so they are never covered.
+  drawWantedStars(ctx, W, H, state.wantedStars);
 
   if (state.grain) {
     const tile = noiseTile();

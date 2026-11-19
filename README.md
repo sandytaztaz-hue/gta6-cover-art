@@ -27,21 +27,21 @@ Diagonal panel cuts with thin neon divider lines, a sunset sky band with a glowi
 
 ## Screenshots
 
-- `1-cover.jpg` — best exported cover (landscape 1920×1080, Five panel, Golden Hour) — the photo-real Lambo + Ducati chase hero front and centre, "VICE PURSUIT"
-- `2-editor.jpg` — the editor with a photo loaded (Five panel, Golden Hour)
-- `3-cover-portrait.jpg` — portrait cover (1080×1350, Hero + strip, Neon) — chase hero on top
-- `4-cover-square.jpg` — square cover (1080×1080, Hero + strip, Vice Night)
+- `1-cover.jpg` — best exported cover (landscape 1920×1080, Five panel, Golden Hour) — the photo-real Lambo + Ducati chase hero front and centre, "VICE PURSUIT", with driver, beach, police chase and neon panels below it
+- `2-editor.jpg` — the editor with the sunset beach scene loaded (Five panel, Golden Hour) — a different lead scene from the cover, so the editor shot never repeats the cover photo
+- `3-cover-portrait.jpg` — portrait cover (1080×1350, Hero + strip, Neon) — the neon night street as the hero panel, "NEON PURSUIT"
+- `4-cover-square.jpg` — square cover (1080×1080, Hero + strip, Vice Night) — the police-chase scene as the hero panel with the five-star wanted HUD top-right, "VICE LIGHTS"
 
 The covers are the PNGs the app itself wrote, scaled to JPEG for size. `shots.json` lists the deterministic `?shot=` URLs that produce them; `tools/shot.mjs` takes them with headless Chrome.
 
 ## Files
 
 - `app/index.html`, `app/style.css` — page and dark editor UI
-- `app/src/cover.js` — the cover engine: layouts, grades, sky band, caption, grain, vignette
+- `app/src/cover.js` — the cover engine: layouts, grades, sky band, caption, grain, vignette, and the GTA wanted-stars HUD (3–5 solid gold stars on a dark pill, top-right)
 - `app/src/main.js` — editor state, controls, drag-drop, per-panel zoom/pan, export
 - `app/src/shots.js` — deterministic `?shot=cover` / `?shot=editor` states
 - `app/fonts/` — Bebas Neue, Anton, Archivo Black (SIL Open Font License, OFL.txt beside each)
-- `app/samples/` — five photo-real photos made with an image model: the chase hero (orange supercar + black/red Ducati side by side on a sunny palm boulevard), a driver with his helmet by the car, a sunset beachfront, a supercar headlight close-up, and a neon street at night. Two older starter samples (boulevard.jpg, pier.jpg) are still in the folder but no longer wired in.
+- `app/samples/` — eight photo-real photos made with an image model, one distinct scene each: the chase hero (orange supercar + black/red Ducati side by side on a sunny palm boulevard), a driver with his helmet by the car, a sunset beachfront, a police chase (the same Lambo + Ducati fleeing a black-and-white interceptor with a flashing light bar), a woman in a leather jacket leaning on the orange Lambo, a neon street at night, a supercar headlight close-up, and a desert highway at dusk. Two older starter samples (boulevard.jpg, pier.jpg) are still in the folder but no longer wired in.
 - `main.ts` — hands app/ + screenshots/ to /output with dossier.json (Node 22 stdlib only)
 - `serve.ts` — tiny static server for local tries
 

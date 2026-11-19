@@ -1,4 +1,4 @@
-// Sunset Cover Studio — deterministic screenshot states.
+// Duskline Cover Studio — deterministic screenshot states.
 //
 // ?shot=cover   the cover alone, full-bleed: the app renders the PNG it would
 //               export at full resolution, shows that PNG, and sets
@@ -13,14 +13,17 @@ import { bootEditor, applyParams, loadSamples, state } from './main.js';
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
 
-/** Which sample photos fill the panels for a cover shot. */
+/** Which sample art fills the panels for a cover shot: the drawn chase
+ *  hero first (panel 1, the big panel), then the two photos. */
 async function samplePhotos() {
   const want = params.get('photo') || 'both';
+  const chase = await loadImage('samples/chase.svg');
   const boulevard = await loadImage('samples/boulevard.jpg');
   const pier = await loadImage('samples/pier.jpg');
   if (want === 'boulevard') return [boulevard, boulevard];
   if (want === 'pier') return [pier, pier];
-  return [boulevard, pier];
+  if (want === 'chase') return [chase, chase];
+  return [chase, boulevard, pier];
 }
 
 /** Cover-only mode: render the real export PNG and show it full-bleed. */
@@ -29,15 +32,16 @@ async function coverShot() {
   const coverView = document.getElementById('coverShot');
   coverView.hidden = false;
   applyParams(params);
-  const [a, b] = await samplePhotos();
+  const photos = await samplePhotos();
   const n = state.panels.length;
   for (let i = 0; i < n; i++) {
-    const img = i % 2 === 0 ? a : b;
+    const img = photos[i % photos.length];
     const crops = [
-      { ox: -0.08, oy: 0 }, { ox: 0.08, oy: -0.04 },
+      { ox: 0, oy: 0 }, { ox: 0.08, oy: -0.04 },
       { ox: 0, oy: 0.08 }, { ox: -0.04, oy: -0.08 },
+      { ox: 0.06, oy: 0.06 },
     ];
-    state.panels[i] = { img, name: 'sample', zoom: 1, ox: crops[i % 4].ox, oy: crops[i % 4].oy, fit: 'cover' };
+    state.panels[i] = { img, name: 'sample', zoom: 1, ox: crops[i % 5].ox, oy: crops[i % 5].oy, fit: 'cover' };
   }
   await fontsReady();
   const size = SIZES[state.size] || SIZES.landscape;

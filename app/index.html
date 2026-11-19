@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sunset Cover Studio — GTA-style multi-panel cover maker</title>
-<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel cover. Three layouts, three grades, full-resolution PNG export — all offline.">
+<title>Duskline Cover Studio — GTA-style multi-panel cover maker</title>
+<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel cover. Four layouts, four grades, full-resolution PNG export — all offline.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">☀</span>
       <div>
-        <h1>Sunset Cover Studio</h1>
+        <h1>Duskline Cover Studio</h1>
         <p class="tagline">Multi-panel cover art, made from your photos</p>
       </div>
     </div>
@@ -43,6 +43,7 @@
           <button type="button" data-layout="diagonal">Diagonal</button>
           <button type="button" data-layout="grid">Grid</button>
           <button type="button" data-layout="hero">Hero + strip</button>
+          <button type="button" data-layout="five">Five panel</button>
         </div>
         <p class="hint" id="layoutHint">3 slanted panels, poster feel.</p>
       </div>
@@ -71,6 +72,7 @@
           <button type="button" data-grade="sunset">Sunset</button>
           <button type="button" data-grade="neon">Neon</button>
           <button type="button" data-grade="vice">Vice Night</button>
+          <button type="button" data-grade="golden">Golden Hour</button>
         </div>
         <label class="field-label" for="intensity">Intensity <span id="intensityVal"></span></label>
         <input id="intensity" type="range" min="0" max="1" step="0.05" value="0.75">
@@ -106,6 +108,7 @@
           <button type="button" class="panel-dot" aria-label="Panel 2">2</button>
           <button type="button" class="panel-dot" aria-label="Panel 3">3</button>
           <button type="button" class="panel-dot" aria-label="Panel 4">4</button>
+          <button type="button" class="panel-dot" aria-label="Panel 5">5</button>
         </div>
       </div>
       <div class="panel-tools">
@@ -119,7 +122,7 @@
   </main>
 
   <footer class="foot">
-    <p>Sunset Cover Studio — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/).</p>
+    <p>Duskline Cover Studio — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/).</p>
   </footer>
 </div>
 

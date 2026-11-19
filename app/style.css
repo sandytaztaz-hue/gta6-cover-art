@@ -1,4 +1,4 @@
-/* Sunset Cover Studio — dark editor UI, neon accents. */
+/* Duskline Cover Studio — dark editor UI, neon accents. */
 
 @font-face {
   font-family: "Bebas Neue";
@@ -242,7 +242,7 @@ input[type="range"] { width: 100%; accent-color: var(--pink); }
 
 #panelLabel { color: var(--muted); font-size: 14px; }
 
-.panel-dots { display: flex; gap: 6px; }
+.panel-dots { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .panel-dot {
   width: 34px;

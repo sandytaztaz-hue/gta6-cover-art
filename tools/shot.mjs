@@ -1,9 +1,10 @@
-// Sunset Cover Studio — screenshot runner (Node 22 stdlib only).
+// Duskline Cover Studio — screenshot runner (Node 22 stdlib only).
 //
 // Serves app/ with serve.ts, drives headless Chrome over its DevTools protocol
 // (plain WebSocket, no library), opens each ?shot= URL from shots.json, waits
 // for window.__shotReady, and saves a JPEG into screenshots/. Covers are the
-// PNGs the app itself wrote, shown full-bleed and captured to JPEG.
+// PNGs the app itself wrote, shown full-bleed and captured to JPEG. Profile
+// cleanup is best-effort: Chrome is killed first and may still hold files.
 //
 //   node tools/shot.mjs [--port 8123] [--quality 85]
 //
@@ -86,7 +87,7 @@ class Cdp {
 // ---------------------------------------------------------------- run
 
 async function takeShot(shot, baseUrl) {
-  const profile = mkdtempSync(join(tmpdir(), 'sunset-shot-'));
+  const profile = mkdtempSync(join(tmpdir(), 'duskline-shot-'));
   const chrome = spawn(CHROME, [
     '--headless=new',
     '--no-sandbox',
@@ -149,7 +150,9 @@ async function takeShot(shot, baseUrl) {
     }
   } finally {
     chrome.kill('SIGKILL');
-    rmSync(profile, { recursive: true, force: true });
+    // Chrome may still be flushing its profile when it is killed; a failed
+    // cleanup must not fail the shot that was just taken.
+    try { rmSync(profile, { recursive: true, force: true }); } catch { /* best effort */ }
   }
 }
 

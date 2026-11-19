@@ -1,4 +1,4 @@
-// Sunset Cover Studio — cover drawing engine.
+// Duskline Cover Studio — cover drawing engine.
 //
 // Plain canvas, no libraries. One draw routine paints both the live preview
 // and the full-resolution export, so what you see is exactly what the PNG holds.
@@ -15,12 +15,14 @@ export const LAYOUTS = {
   diagonal: { label: 'Diagonal', panels: 3, hint: '3 slanted panels, poster feel' },
   grid: { label: 'Grid', panels: 4, hint: '2 × 2 four panels' },
   hero: { label: 'Hero + strip', panels: 4, hint: '1 big panel + 3 small below' },
+  five: { label: 'Five panel', panels: 5, hint: '1 hero panel + 4 small below' },
 };
 
 export const GRADES = {
   sunset: { label: 'Sunset', hint: 'orange-pink warmth' },
   neon: { label: 'Neon', hint: 'magenta / cyan duotone' },
   vice: { label: 'Vice Night', hint: 'purple / blue night' },
+  golden: { label: 'Golden Hour', hint: 'warm amber / gold glow' },
 };
 
 export const CAPTION_COLORS = {
@@ -33,7 +35,7 @@ export const CAPTION_COLORS = {
 export const CAPTION_FONT = '"Bebas Neue", "Anton", "Archivo Black", sans-serif';
 export const SUB_FONT = '"Anton", "Archivo Black", sans-serif';
 
-/** A fresh default state: diagonal sunset cover, ready for a photo. */
+/** A fresh default state: five-panel golden-hour cover, ready for a photo. */
 export function defaultState() {
   return {
     layout: 'diagonal',
@@ -83,6 +85,22 @@ export function layoutPanels(layout, W, H) {
       rect(2 * (sw + g), stripY, sw, stripH),
     ];
   }
+  if (layout === 'five') {
+    // Five panel: one hero panel on top, four small panels in a row below,
+    // so five different photos (or five crops of one photo) share the cover.
+    const g = Math.max(4, Math.round(W * 0.008));
+    const topH = Math.round(H * 0.60);
+    const stripY = topH + g;
+    const stripH = H - stripY;
+    const sw = (W - 3 * g) / 4;
+    return [
+      rect(0, 0, W, topH),
+      rect(0, stripY, sw, stripH),
+      rect(sw + g, stripY, sw, stripH),
+      rect(2 * (sw + g), stripY, sw, stripH),
+      rect(3 * (sw + g), stripY, sw, stripH),
+    ];
+  }
   // diagonal: three slanted panels, cuts leaning like a poster fold.
   const cut = (xTop, xBottom) => [[xTop, 0], [xBottom, H]];
   const poly = (pts) => {
@@ -124,6 +142,18 @@ export function layoutDividers(layout, W, H) {
       [[0, topH + g / 2], [W, topH + g / 2]],
       [[sw + g / 2, stripY], [sw + g / 2, H]],
       [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
+    ];
+  }
+  if (layout === 'five') {
+    const g = Math.max(4, Math.round(W * 0.008));
+    const topH = Math.round(H * 0.60);
+    const stripY = topH + g;
+    const sw = (W - 3 * g) / 4;
+    return [
+      [[0, topH + g / 2], [W, topH + g / 2]],
+      [[sw + g / 2, stripY], [sw + g / 2, H]],
+      [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
+      [[3 * sw + 2.5 * g, stripY], [3 * sw + 2.5 * g, H]],
     ];
   }
   return [
@@ -246,6 +276,7 @@ function drawEmptyPanel(ctx, panel, index, W, H) {
 function photoFilter(grade) {
   if (grade === 'neon') return 'saturate(1.55) contrast(1.12) brightness(1.03)';
   if (grade === 'vice') return 'saturate(1.08) contrast(1.06) hue-rotate(-14deg) brightness(0.97)';
+  if (grade === 'golden') return 'saturate(1.45) contrast(1.08) sepia(0.28) brightness(1.06)';
   return 'saturate(1.28) contrast(1.06) brightness(1.02)';
 }
 
@@ -274,6 +305,18 @@ function gradeWash(ctx, grade, intensity, W, H) {
     ctx.globalCompositeOperation = 'soft-light';
     ctx.fillStyle = `rgba(255,0,160,${0.10 * a})`;
     ctx.fillRect(0, 0, W, H);
+  } else if (grade === 'golden') {
+    // Golden Hour: warm amber from the top, deep gold at the bottom.
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, `rgba(255,190,60,${0.36 * a})`);
+    g.addColorStop(0.55, `rgba(255,150,30,${0.24 * a})`);
+    g.addColorStop(1, `rgba(180,90,10,${0.30 * a})`);
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.fillStyle = `rgba(255,180,50,${0.10 * a})`;
+    ctx.fillRect(0, 0, W, H);
   } else {
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, `rgba(90,40,180,${0.34 * a})`);
@@ -295,6 +338,7 @@ function skyBand(ctx, grade, intensity, W, H) {
     sunset: ['#ff9a3c', '#ff5e78', '#7a2d8f'],
     neon: ['#ff2e88', '#b537f2', '#22d3ee'],
     vice: ['#5b2a86', '#2b3a8f', '#0e1e5c'],
+    golden: ['#ffd76a', '#ff9a1e', '#b45f06'],
   }[grade] || ['#ff9a3c', '#ff5e78', '#7a2d8f'];
   const g = ctx.createLinearGradient(0, 0, 0, bandH);
   g.addColorStop(0, stops[0]);

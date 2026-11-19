@@ -1,4 +1,4 @@
-// Sunset Cover Studio — editor wiring.
+// Duskline Cover Studio — editor wiring.
 //
 // Owns the page state, the controls and the live preview. The cover itself is
 // painted by cover.js; this file only moves photos, captions and sliders around
@@ -10,7 +10,7 @@ import {
   loadImage, fontsReady,
 } from './cover.js';
 
-const SAMPLES = ['samples/boulevard.jpg', 'samples/pier.jpg'];
+const SAMPLES = ['samples/chase.svg', 'samples/boulevard.jpg', 'samples/pier.jpg'];
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -101,10 +101,11 @@ function refreshPanelBar() {
 /** Put a loaded image into a panel slot (fresh zoom/pan each time). */
 function placePhoto(index, img, name, crop) {
   const crops = [
-    { ox: -0.08, oy: 0 },
+    { ox: 0, oy: 0 },
     { ox: 0.08, oy: -0.04 },
     { ox: 0, oy: 0.08 },
     { ox: -0.04, oy: -0.08 },
+    { ox: 0.06, oy: 0.06 },
   ];
   const c = crop || crops[index % crops.length];
   state.panels[index] = {
@@ -113,13 +114,16 @@ function placePhoto(index, img, name, crop) {
   };
 }
 
-/** Load the two built-in samples into the panels, alternating crops. */
+/** Load the built-in samples into the panels: the drawn chase hero first,
+ *  then the two photos, alternating crops. */
 export async function loadSamples() {
   try {
-    const [a, b] = await Promise.all(SAMPLES.map((s) => loadImage(s)));
+    const [chase, a, b] = await Promise.all(SAMPLES.map((s) => loadImage(s)));
     const n = state.panels.length;
+    const imgs = [chase, a, b];
+    const names = ['chase.svg', 'boulevard.jpg', 'pier.jpg'];
     for (let i = 0; i < n; i++) {
-      placePhoto(i, i % 2 === 0 ? a : b, i % 2 === 0 ? 'boulevard.jpg' : 'pier.jpg');
+      placePhoto(i, imgs[i % 3], names[i % 3]);
     }
     selected = 0;
     refreshSteps();
@@ -172,7 +176,7 @@ export async function exportPng() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `sunset-cover-${state.size}.png`;
+  a.download = `duskline-cover-${state.size}.png`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -398,10 +402,12 @@ export function applyParams(params) {
 export async function bootEditor(params) {
   applyParams(params);
   bindControls();
+  const hint = $('layoutHint');
+  if (hint) hint.textContent = `${LAYOUTS[state.layout].panels} panels — ${LAYOUTS[state.layout].hint}.`;
   refreshSteps();
   refreshPanelBar();
   await fontsReady();
   scheduleRender();
   // A handle for the screenshot + verification scripts (not part of the UI).
-  window.__sunsetCover = { state, renderPreview, exportPng, loadSamples };
+  window.__dusklineCover = { state, renderPreview, exportPng, loadSamples };
 }

@@ -1,4 +1,4 @@
-// Sunset Cover Studio — entry program (Node 22, standard library only).
+// Duskline Cover Studio — entry program (Node 22, standard library only).
 //
 // The app is this directory's app/ folder: plain static files a desktop browser
 // loads offline (app/index.html and its ES modules, no library, no network
@@ -6,11 +6,11 @@
 // beside this file to /output and writes /output/dossier.json, the summary the
 // judge reads, with the vendored make.fun library.
 //
-// The cover maker itself: three multi-panel layouts (Diagonal, Grid,
-// Hero + strip), three canvas grades (Sunset, Neon, Vice Night), a big outlined
-// glow caption, and full-resolution PNG export at 1080×1080, 1080×1350 and
-// 1920×1080. Its two sample photos (app/samples/) were made for make.fun with
-// an image model and are free to use.
+// The cover maker itself: four multi-panel layouts (Diagonal, Grid,
+// Hero + strip, Five panel), four canvas grades (Sunset, Neon, Vice Night,
+// Golden Hour), a big outlined glow caption, and full-resolution PNG export
+// at 1080×1080, 1080×1350 and 1920×1080. Its two sample photos
+// (app/samples/) were made for make.fun with an image model and are free to use.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
@@ -52,6 +52,6 @@ const shotEntries = copyIfPresent(join(here, 'screenshots'), join(out, 'screensh
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, DOSSIER_CAPS));
 
 console.log(
-  `Sunset Cover Studio handed in: ${appEntries} app entries, ` +
+  `Duskline Cover Studio handed in: ${appEntries} app entries, ` +
   `${shotEntries} screenshots, dossier written to ${join(out, 'dossier.json')}`,
 );

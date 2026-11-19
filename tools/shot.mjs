@@ -1,86 +1,178 @@
-// Screenshot runner for Sunset Cover Studio. Serves app/ on a local port, captures every
-// scene in shots.json with headless Chrome, and converts the PNG captures to JPEGs sized
-// for the make.fun gate (long side <= 1280, short side >= 480, each <= 256 KiB).
-// Run from the repo root:  node tools/shot.mjs
-// Requires: the Chrome binary at CHROME and python3 + PIL for the JPEG conversion.
+// Sunset Cover Studio — screenshot runner (Node 22 stdlib only).
+//
+// Serves app/ with serve.ts, drives headless Chrome over its DevTools protocol
+// (plain WebSocket, no library), opens each ?shot= URL from shots.json, waits
+// for window.__shotReady, and saves a JPEG into screenshots/. Covers are the
+// PNGs the app itself wrote, shown full-bleed and captured to JPEG.
+//
+//   node tools/shot.mjs [--port 8123] [--quality 85]
+//
+// Chrome: /home/hatch/.cache/puppeteer/chrome/linux-157.0.8103.50/chrome-linux64/chrome
 
 import { spawn } from 'node:child_process';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { readFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const run = promisify(execFile);
-const repo = fileURLToPath(new URL('..', import.meta.url));
 const CHROME = '/home/hatch/.cache/puppeteer/chrome/linux-157.0.8103.50/chrome-linux64/chrome';
-const PORT = 8091;
-const NODE = '/home/hatch/workspace/makefun/github-core-clone-01/node-v22.21.1-linux-x64/bin/node';
+const MAX_BYTES = 262144;
 
-const shots = JSON.parse(readFileSync(join(repo, 'shots.json'), 'utf8'));
+const here = fileURLToPath(new URL('..', import.meta.url));
+const args = process.argv.slice(2);
+const portIndex = args.indexOf('--port');
+const port = portIndex === -1 ? 8123 : Number(args[portIndex + 1]);
+const qualityIndex = args.indexOf('--quality');
+const startQuality = qualityIndex === -1 ? 85 : Number(args[qualityIndex + 1]);
 
-function waitForServer(url, tries = 40) {
-  return new Promise((resolve, reject) => {
-    const tick = async (left) => {
-      try {
-        const res = await fetch(url);
-        if (res.ok) return resolve();
-      } catch { /* not up yet */ }
-      if (left <= 0) return reject(new Error('server did not come up'));
-      setTimeout(() => tick(left - 1), 250);
-    };
-    tick(tries);
-  });
-}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function shotChrome(url, png, w, h) {
-  return new Promise((resolve, reject) => {
-    const args = [
-      '--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars',
-      '--force-device-scale-factor=1', '--virtual-time-budget=9000',
-      `--window-size=${w},${h}`, `--screenshot=${png}`, url,
-    ];
-    const proc = spawn(CHROME, args, { stdio: 'pipe' });
-    let err = '';
-    proc.stderr.on('data', (d) => { err += d; });
-    proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`chrome ${code}: ${err.slice(-400)}`))));
-  });
-}
-
-// PNG capture -> JPEG at the shot's own dimensions, quality tuned to stay under 256 KiB.
-async function toJpeg(png, jpg, w, h) {
-  const script = `
-from PIL import Image
-im = Image.open(${JSON.stringify(png)}).convert('RGB')
-im = im.resize((${w}, ${h}), Image.LANCZOS)
-q = 90
-while True:
-    im.save(${JSON.stringify(jpg)}, 'JPEG', quality=q, optimize=True)
-    import os
-    if os.path.getsize(${JSON.stringify(jpg)}) <= 250 * 1024 or q <= 55:
-        break
-    q -= 5
-print(im.size, q)
-`;
-  const { stdout } = await run('python3', ['-c', script]);
-  return stdout.trim();
-}
-
-const server = spawn(NODE, ['serve.ts', '--port', String(PORT)], { cwd: repo, stdio: 'pipe' });
-try {
-  await waitForServer(`http://127.0.0.1:${PORT}/`);
-  console.log(`serving app/ on :${PORT}`);
-  for (const s of shots) {
-    const url = `http://127.0.0.1:${PORT}/${s.query}`;
-    // Keep the intermediate PNG in /tmp: anything left in screenshots/ would be copied
-    // into the entry and count against the 4-screenshot cap.
-    const png = `/tmp/shot-${s.name}.png`;
-    const jpg = join(repo, 'screenshots', s.name);
-    await shotChrome(url, png, s.w, s.h);
-    const info = await toJpeg(png, jpg, s.w, s.h);
-    console.log(`${s.name}: ${info}`);
+async function waitFor(fn, timeoutMs, label) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      const v = await fn();
+      if (v) return v;
+    } catch { /* not up yet */ }
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${label}`);
+    await sleep(250);
   }
-} finally {
-  server.kill();
 }
-console.log('done');
+
+/** Minimal CDP client over Node's built-in WebSocket. */
+class Cdp {
+  constructor(url) {
+    this.ws = new WebSocket(url);
+    this.nextId = 1;
+    this.pending = new Map();
+    this.ws.onmessage = (event) => {
+      let msg;
+      try { msg = JSON.parse(event.data); } catch { return; }
+      if (msg.id !== undefined && this.pending.has(msg.id)) {
+        const { resolve, reject } = this.pending.get(msg.id);
+        this.pending.delete(msg.id);
+        if (msg.error) reject(new Error(msg.error.message));
+        else resolve(msg.result);
+      }
+    };
+  }
+
+  ready() {
+    return new Promise((resolve, reject) => {
+      this.ws.onopen = resolve;
+      this.ws.onerror = reject;
+    });
+  }
+
+  send(method, params = {}) {
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.ws.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  async eval(expression) {
+    const r = await this.send('Runtime.evaluate', { expression, returnByValue: true });
+    if (r.exceptionDetails) throw new Error(`page error: ${JSON.stringify(r.exceptionDetails)}`);
+    return r.result.value;
+  }
+
+  close() {
+    try { this.ws.close(); } catch { /* already closed */ }
+  }
+}
+
+// ---------------------------------------------------------------- run
+
+async function takeShot(shot, baseUrl) {
+  const profile = mkdtempSync(join(tmpdir(), 'sunset-shot-'));
+  const chrome = spawn(CHROME, [
+    '--headless=new',
+    '--no-sandbox',
+    '--disable-gpu',
+    '--hide-scrollbars',
+    '--remote-debugging-port=9222',
+    `--user-data-dir=${profile}`,
+    'about:blank',
+  ], { stdio: 'ignore' });
+  try {
+    const version = await waitFor(
+      async () => {
+        const res = await fetch('http://127.0.0.1:9222/json/version');
+        if (!res.ok) throw new Error('devtools not up');
+        return res.json();
+      },
+      20000,
+      'chrome devtools',
+    );
+    void version;
+    const targetRes = await fetch(
+      `http://127.0.0.1:9222/json/new?${encodeURIComponent(baseUrl + shot.query)}`,
+      { method: 'PUT' },
+    );
+    if (!targetRes.ok) throw new Error(`could not open target (${targetRes.status})`);
+    const target = await targetRes.json();
+    const cdp = new Cdp(target.webSocketDebuggerUrl);
+    await cdp.ready();
+    try {
+      await cdp.send('Page.enable');
+      await cdp.send('Runtime.enable');
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: shot.w, height: shot.h, deviceScaleFactor: 1, mobile: false,
+      });
+      await cdp.send('Page.navigate', { url: baseUrl + shot.query });
+      await waitFor(
+        async () => (await cdp.eval('window.__shotReady === true')) === true,
+        30000,
+        `__shotReady for ${shot.name}`,
+      );
+      // One frame to settle after the ready flag, so the paint is complete.
+      await sleep(400);
+      let quality = startQuality;
+      for (;;) {
+        const { data } = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality });
+        const bytes = Buffer.from(data, 'base64');
+        writeFileSync(join(here, 'screenshots', shot.name), bytes);
+        console.log(`${shot.name}: ${shot.w}x${shot.h} q${quality} ${bytes.length} bytes`);
+        if (bytes.length <= MAX_BYTES || quality <= 50) {
+          if (bytes.length > MAX_BYTES) console.warn(`${shot.name}: over 256 KiB at lowest quality`);
+          return bytes.length;
+        }
+        quality -= 15;
+      }
+    } finally {
+      cdp.close();
+      try {
+        await fetch(`http://127.0.0.1:9222/json/close/${target.id}`);
+      } catch { /* chrome is going away anyway */ }
+    }
+  } finally {
+    chrome.kill('SIGKILL');
+    rmSync(profile, { recursive: true, force: true });
+  }
+}
+
+const shots = JSON.parse(readFileSync(join(here, 'shots.json'), 'utf8'));
+const server = spawn(
+  process.execPath,
+  [join(here, 'serve.ts'), '--port', String(port)],
+  { stdio: 'inherit' },
+);
+try {
+  await waitFor(
+    async () => {
+      const res = await fetch(`http://127.0.0.1:${port}/index.html`);
+      return res.ok;
+    },
+    15000,
+    'serve.ts',
+  );
+  const baseUrl = `http://127.0.0.1:${port}/`;
+  for (const shot of shots) {
+    await takeShot(shot, baseUrl);
+  }
+  console.log('all shots taken');
+} finally {
+  server.kill('SIGKILL');
+}

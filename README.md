@@ -1,58 +1,52 @@
 # Sunset Cover Studio
 
-[![make.fun · gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
-[![rank](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
-[![reward](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
+[![gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/c/gta6-cover-art-01)
+[![rank](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/rank.svg)](https://make.fun/c/gta6-cover-art-01)
+[![reward](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/reward.svg)](https://make.fun/c/gta6-cover-art-01)
 
-Turn any photo into a bold, GTA-style multi-panel cover — right in your browser, fully
-offline, in three steps. Pick a layout, add a caption, choose a grade, and export a
-full-resolution PNG.
+Turn your photos and a caption into GTA-style multi-panel cover art — in the browser, offline, in three steps. Built for the [make.fun gta6-cover-art-01 bounty](https://make.fun/c/gta6-cover-art-01).
 
-## How it works
+## What it does
 
-1. **Add a photo** — upload your own (one photo fills every panel with different crops, or
-   give each panel its own), drag the preview to reposition it, zoom and fit per panel.
-   No upload needed to start: two built-in sample photos are one click away.
-2. **Pick a layout + caption** — three multi-panel layouts (**Diagonal**, **Grid**,
-   **Hero + strip**), big condensed poster lettering with an outline and neon glow, in
-   white, neon pink, cyan or gold, top or bottom, with a sub-caption line.
-3. **Export** — one click saves a PNG at full native resolution: **1920 x 1080**,
-   **1080 x 1350** or **1080 x 1080**. The live preview and the export share one draw
-   routine, so what you see is exactly what the PNG holds.
+- **3 multi-panel layouts** — Diagonal (3 slanted panels, poster feel), Grid (2×2), Hero + strip (1 big panel + 3 small). Every panel is a drop zone.
+- **Any photo, any panel** — add photos from your device, drag-drop onto a panel, or load the built-in samples. One photo can fill all panels with different crops; each panel gets its own drag-to-position, zoom slider, and fit/cover switch.
+- **Big bold caption** — editable main caption + sub-caption in condensed poster lettering (Bebas Neue / Anton), with colour (white, neon pink, cyan, gold), top/bottom position, dark outline and a coloured glow. The size auto-fits the frame width.
+- **3 canvas grades** — Sunset (orange-pink warmth), Neon (magenta/cyan duotone), Vice Night (purple/blue), each with an intensity slider, plus film grain (seeded, so exports are deterministic) and a vignette toggle.
+- **Full-resolution export** — 1080×1080, 1080×1350, 1920×1080 PNG, one click. The live preview and the export share one draw routine, so what you see is what the PNG holds. Drawing happens at native resolution, never upscaled, with high-quality smoothing and fonts loaded before the first paint.
 
 ## The look
 
-Every cover carries the same signature: diagonal panel cuts with thin neon divider lines,
-a warm sunset sky band across the top, and outlined glow lettering. Three colour grades —
-**Sunset** (orange to pink), **Neon** (magenta/cyan duotone) and **Vice Night**
-(purple/blue) — plus an intensity slider, film grain and a vignette.
+Diagonal panel cuts with thin neon divider lines, a sunset sky band with a glowing sun across the top, and outlined glow lettering — a cover that reads as ours, not a single-photo filter.
 
-## Run it
+## How to use
 
-```sh
-node serve.ts
-```
-
-Then open http://localhost:8080. No build step, no libraries, no network — the app is
-plain HTML, CSS and ES modules under `app/`, and the poster fonts ship as local files.
-
-## Fonts
-
-- [Bebas Neue](https://github.com/google/fonts/tree/main/ofl/bebasneue) — SIL Open Font License 1.1 (`app/fonts/OFL-BebasNeue.txt`)
-- [Anton](https://github.com/google/fonts/tree/main/ofl/anton) — SIL Open Font License 1.1 (`app/fonts/OFL-Anton.txt`)
-- [Archivo Black](https://github.com/google/fonts/tree/main/ofl/archivoblack) — SIL Open Font License 1.1
-
-The two sample photos in `app/samples/` were made for make.fun with an image model and
-are free to use.
+1. Open `app/index.html` in a browser (or serve the folder: `node serve.ts`, then http://localhost:8080). No install, no network, no account.
+2. **Add a photo** — pick files, drop them on the preview, or press "Try a sample".
+3. **Pick a layout + caption** — switch layouts, type the caption, choose a colour and a grade.
+4. **Export PNG** — choose a size and press Export PNG. The file downloads at full resolution.
 
 ## Screenshots
 
-Deterministic scenes live in `shots.json` (`?shot=cover` for the cover alone,
-`?shot=editor` for the editor, with `&layout=`, `&grade=`, `&size=`, `&caption=`
-parameters). The first screenshot, `1-cover.jpg`, is the landscape cover.
+- `1-cover.jpg` — best exported cover (landscape 1920×1080, Diagonal, Sunset)
+- `2-editor.jpg` — the editor with a photo loaded
+- `3-cover-portrait.jpg` — portrait cover (1080×1350, Grid, Neon)
+- `4-cover-square.jpg` — square cover (1080×1080, Hero + strip, Vice Night)
 
-## License
+The covers are the PNGs the app itself wrote, scaled to JPEG for size. `shots.json` lists the deterministic `?shot=` URLs that produce them; `tools/shot.mjs` takes them with headless Chrome.
 
-MIT — see [LICENSE](LICENSE). Built for the make.fun bounty
-[gta6-cover-art-01](https://make.fun/bounty/gta6-cover-art-01). Not affiliated with
-Rockstar Games; no Rockstar artwork, logo or font is used.
+## Files
+
+- `app/index.html`, `app/style.css` — page and dark editor UI
+- `app/src/cover.js` — the cover engine: layouts, grades, sky band, caption, grain, vignette
+- `app/src/main.js` — editor state, controls, drag-drop, per-panel zoom/pan, export
+- `app/src/shots.js` — deterministic `?shot=cover` / `?shot=editor` states
+- `app/fonts/` — Bebas Neue, Anton, Archivo Black (SIL Open Font License, OFL.txt beside each)
+- `app/samples/` — boulevard.jpg, pier.jpg (made for make.fun with an image model, free to use)
+- `main.ts` — hands app/ + screenshots/ to /output with dossier.json (Node 22 stdlib only)
+- `serve.ts` — tiny static server for local tries
+
+## Notes
+
+- Everything runs offline: fonts and samples are local files, and the app makes no network requests.
+- No Rockstar logo, artwork or font anywhere; the name "Sunset Cover Studio" is our own.
+- No wallet, password or seed prompts, no cookies, no service worker, no `eval`.

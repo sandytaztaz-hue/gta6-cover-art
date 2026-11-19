@@ -1,58 +1,77 @@
-// Fixed scenes for screenshots: ?shot=cover shows the cover alone, full-bleed; ?shot=editor
-// shows the editor with samples loaded. &layout= &grade= &size= &caption= &sub= &photo= make
-// every shot deterministic, and window.__shotReady is set once the fonts are in and the
-// cover is painted, so a headless screenshot never catches a half-drawn frame.
+// Sunset Cover Studio — deterministic screenshot states.
 //
-// Examples:
-//   ?shot=cover&layout=diagonal&grade=sunset&size=landscape&photo=pier&caption=SUNSET%20HEIST
-//   ?shot=editor&layout=diagonal&grade=sunset&size=landscape&photo=both
-// photo= takes one sample name (boulevard, pier) or "both" to spread both samples over panels.
+// ?shot=cover   the cover alone, full-bleed: the app renders the PNG it would
+//               export at full resolution, shows that PNG, and sets
+//               window.__shotReady once it is on screen.
+// ?shot=editor  the editor with the built-in samples loaded.
+// Both accept &layout= &grade= &size= &caption= &subcaption= &color= &pos=
+// and &photo= (boulevard | pier | both). Without ?shot= the plain editor boots.
 
-const SIZE_KEYS = { landscape: 'landscape', portrait: 'portrait', square: 'square' };
+import { SIZES, renderCover, loadImage, fontsReady } from './cover.js';
+import { bootEditor, applyParams, loadSamples, state } from './main.js';
 
-export async function runShot(shot, query, state, hooks) {
-  const { loadImage, redraw, loadSample } = hooks;
-  if (shot === 'cover') document.body.classList.add('shot-cover');
+const params = new URLSearchParams(window.location.search);
+const shot = params.get('shot');
 
-  const layout = query.get('layout');
-  if (layout === 'diagonal' || layout === 'grid' || layout === 'hero') state.layout = layout;
-  const grade = query.get('grade');
-  if (grade === 'sunset' || grade === 'neon' || grade === 'night') state.grade = grade;
-  const sizeKey = SIZE_KEYS[query.get('size')] || 'landscape';
-  state.sizeKey = sizeKey;
-  const caption = query.get('caption');
-  if (caption !== null) {
-    state.caption = caption;
-    const input = document.getElementById('caption');
-    if (input) input.value = caption;
+/** Which sample photos fill the panels for a cover shot. */
+async function samplePhotos() {
+  const want = params.get('photo') || 'both';
+  const boulevard = await loadImage('samples/boulevard.jpg');
+  const pier = await loadImage('samples/pier.jpg');
+  if (want === 'boulevard') return [boulevard, boulevard];
+  if (want === 'pier') return [pier, pier];
+  return [boulevard, pier];
+}
+
+/** Cover-only mode: render the real export PNG and show it full-bleed. */
+async function coverShot() {
+  document.getElementById('app').hidden = true;
+  const coverView = document.getElementById('coverShot');
+  coverView.hidden = false;
+  applyParams(params);
+  const [a, b] = await samplePhotos();
+  const n = state.panels.length;
+  for (let i = 0; i < n; i++) {
+    const img = i % 2 === 0 ? a : b;
+    const crops = [
+      { ox: -0.08, oy: 0 }, { ox: 0.08, oy: -0.04 },
+      { ox: 0, oy: 0.08 }, { ox: -0.04, oy: -0.08 },
+    ];
+    state.panels[i] = { img, name: 'sample', zoom: 1, ox: crops[i % 4].ox, oy: crops[i % 4].oy, fit: 'cover' };
   }
-  const sub = query.get('sub');
-  if (sub !== null) {
-    state.sub = sub;
-    const input = document.getElementById('sub');
-    if (input) input.value = sub;
-  }
-  const color = query.get('color');
-  if (color === 'white' || color === 'pink' || color === 'cyan' || color === 'gold') state.color = color;
+  await fontsReady();
+  const size = SIZES[state.size] || SIZES.landscape;
+  const canvas = renderCover(state, state.size);
+  const img = document.getElementById('coverImg');
+  img.width = size.w;
+  img.height = size.h;
+  img.src = canvas.toDataURL('image/png');
+  await new Promise((resolve) => {
+    if (img.complete) resolve();
+    else img.onload = resolve;
+  });
+  window.__shotReady = true;
+}
 
-  const photo = query.get('photo') ?? 'pier';
-  if (photo === 'both') {
-    const a = await loadImage('samples/boulevard.jpg');
-    const b = await loadImage('samples/pier.jpg');
-    state.panels[0] = { ...state.panels[0], img: a };
-    state.panels[1] = { ...state.panels[1], img: b };
-    state.panels[2] = { ...state.panels[2], img: a };
-    state.panels[3] = { ...state.panels[3], img: b };
-  } else {
-    await loadSample(photo);
-  }
-  state.active = 0;
+/** Editor mode: boot the editor, load the samples, then signal ready. */
+async function editorShot() {
+  await bootEditor(params);
+  await loadSamples();
+  // Let the preview paint once before the screenshot is taken.
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  window.__shotReady = true;
+}
 
-  // Wait for the poster fonts before painting, so the lettering is crisp, not a fallback.
-  // A second paint after fonts settle guards against a font that arrives a beat late.
-  try { await document.fonts.ready; } catch { /* fonts are local; a miss still paints */ }
-  redraw();
-  await new Promise((resolve) => setTimeout(resolve, 60));
-  redraw();
-  requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
+if (shot === 'cover') {
+  coverShot().catch((err) => {
+    console.error(err);
+    window.__shotReady = true;
+  });
+} else if (shot === 'editor') {
+  editorShot().catch((err) => {
+    console.error(err);
+    window.__shotReady = true;
+  });
+} else {
+  bootEditor(params);
 }

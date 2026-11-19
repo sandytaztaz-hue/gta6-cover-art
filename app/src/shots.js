@@ -33,6 +33,9 @@ const SAMPLES_BY_KEY = {
   beachday: 'samples/media-generation-beach-day-0-cbf349ba-457e-48ff-a4dc-2d402c285bba.jpg',
   rooftop: 'samples/media-generation-rooftop-dusk-0-94866e7c-e26f-4a72-8d61-d36aa416924c.jpg',
   desertnoon: 'samples/media-generation-desert-noon-0-41dfc5d7-5556-4985-8a80-5408ee2d0b62.jpg',
+  // Sand's 08:43 tweak: the desert highway is out, a man fishing from a
+  // pier at dawn takes panel #3 — a different activity, no road, no car.
+  fishing: 'samples/media-generation-fishing-0-a972f84c-1921-46e6-b469-27542d478cae.jpg',
 };
 const DEFAULT_ORDER = ['chase', 'driver', 'beach', 'police', 'woman', 'neon', 'detail', 'desert'];
 

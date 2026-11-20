@@ -1,9 +1,13 @@
-// VICE PURSUIT — editor (rebuild r8, photo edition).
+// VICE PURSUIT — editor (rebuild r9, six-panel edition).
 //
 // Wires the cover engine to the page: photo add / drag-drop / per-panel
 // zoom + pan, layouts, grades, sliders, title styles, callouts, stickers,
 // undo/redo, smart crops, and full-resolution PNG export. The live preview
 // and the export share drawCover, so what you see is what the PNG holds.
+// r9: the Magazine layout is six panels (hero + five stacked right), the
+// big wanted-stars pill defaults to off, the HEAT badge reads ★★★★☆, and
+// the sample strip holds ten photographs — the r8 eight plus a desert
+// canyon sunset and an Everglades dusk, both made in this session.
 
 import {
   SIZES, LAYOUTS, GRADES, CAPTION_COLORS, TITLE_STYLES,
@@ -206,11 +210,14 @@ export function resizePanels() {
 
 // ---------------------------------------------------------------- samples
 
-/** The eight in-session photographs, keyed by scene: one distinct hero and
+/** The ten in-session photographs, keyed by scene: one distinct hero and
  *  one distinct atmosphere/weather per photo, so no two panels — and no two
- *  screenshots — ever repeat a look. All eight are real photographs made in
+ *  screenshots — ever repeat a look. All ten are real photographs made in
  *  this session: the chase hero is an edit of the owner's own car photo, the
- *  other seven are AI-generated photographs. */
+ *  other nine are AI-generated photographs. The two r9 additions sit at
+ *  the end of the order so the older eight keep their places: a desert
+ *  canyon at sunset with an orange muscle car on a winding road, and an
+ *  Everglades airboat at dusk with a heron in the shallows. */
 export const SAMPLES = {
   chase: { file: 'samples/chase.jpg', name: 'Chase hero', label: 'Sunny palm boulevard — orange supercar + sport bike, police behind' },
   neon: { file: 'samples/neon.jpg', name: 'Neon night', label: 'Rainy neon city — woman + red sports car' },
@@ -220,11 +227,16 @@ export const SAMPLES = {
   harbor: { file: 'samples/harbor.jpg', name: 'Harbor dusk', label: 'Harbor dusk — speedboat + yacht, purple sky' },
   rooftop: { file: 'samples/rooftop.jpg', name: 'Rooftop night', label: 'Rooftop night — helicopter + skyline' },
   pier: { file: 'samples/pier.jpg', name: 'Misty pier', label: 'Misty dawn pier — boat + fisherman' },
+  canyon: { file: 'samples/media-generation-canyon-0-c4d8cd01-c46e-4fe4-9a6a-28562d745c56.jpg', name: 'Canyon sunset', label: 'Desert canyon sunset — orange muscle car on a winding red-rock road' },
+  everglades: { file: 'samples/media-generation-everglades-0-f52ffb10-793a-4446-a27c-4c566baf23db.jpg', name: 'Everglades dusk', label: 'Everglades dusk — airboat + heron on a sawgrass marsh' },
 };
-export const SAMPLE_ORDER = ['chase', 'neon', 'beach', 'rain', 'desert', 'harbor', 'rooftop', 'pier'];
+export const SAMPLE_ORDER = ['chase', 'neon', 'beach', 'rain', 'desert', 'harbor', 'rooftop', 'pier', 'canyon', 'everglades'];
 
 /** Smart crops: per-scene focus offsets, so each sample lands with its
- *  hero in frame instead of a blind centre crop. */
+ *  hero in frame instead of a blind centre crop. The two r9 photos keep
+ *  their heroes low in the frame (the canyon's car, the Everglades boat
+ *  and heron), so their offsets pull down hard — a centre crop on a short
+ *  stacked panel would cut both clean off. */
 export const SMART_CROPS = {
   chase: { ox: 0, oy: -0.04 },
   neon: { ox: 0.06, oy: 0 },
@@ -234,6 +246,8 @@ export const SMART_CROPS = {
   harbor: { ox: 0, oy: -0.05 },
   rooftop: { ox: 0, oy: 0.06 },
   pier: { ox: 0.04, oy: 0.02 },
+  canyon: { ox: 0, oy: -0.35 },
+  everglades: { ox: 0, oy: -0.2 },
 };
 
 function slotFor(img, name, src, key) {
@@ -386,7 +400,7 @@ export function syncControls() {
   const hint = $('layoutHint');
   if (hint) hint.textContent = (LAYOUTS[state.layout] || {}).hint || '';
   const starSel = $('starCount');
-  if (starSel) starSel.value = String(state.wantedStars);
+  if (starSel) starSel.value = String(state.wantedStars); // r9 default 0 — the big pill is off unless a shot URL asks for it
   updateSliderLabels();
 }
 

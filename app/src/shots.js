@@ -1,4 +1,4 @@
-// VICE PURSUIT — deterministic screenshot states (rebuild r8, photo edition).
+// VICE PURSUIT — deterministic screenshot states (rebuild r9, six-panel edition).
 //
 // ?shot=cover   the cover alone, full-bleed: the app renders the PNG it
 //               would export at full resolution, shows that PNG, and sets
@@ -10,6 +10,13 @@
 // and &photo=<key> for the old single-photo form. Without ?shot= the plain
 // editor boots. Each shot leads with a DIFFERENT scene — the panels param
 // is what keeps the screenshots from recycling the same photo.
+//
+// r9: the magazine grid is SIX panels now (hero + five stacked right), so
+// the default panel order lists six scenes: the sunny chase hero, the neon
+// driver, the rainy fixer, the misty pier, the desert-canyon getaway and
+// the Everglades smuggler. The big wanted-stars pill defaults to OFF —
+// the main cover shot omits &stars= entirely; only the portrait/square
+// variants still pass &stars=5, keeping their pills exactly as before.
 
 import { SIZES, renderCover, loadImage, fontsReady } from './cover.js';
 import { bootEditor, applyParams, loadSamples, state, SAMPLES } from './main.js';
@@ -25,7 +32,7 @@ function panelOrder() {
   if (panels.length) return panels;
   const single = params.get('photo');
   if (single && SAMPLES[single]) return [single];
-  return ['chase', 'neon', 'beach', 'rain', 'desert', 'harbor', 'rooftop', 'pier'];
+  return ['chase', 'neon', 'rain', 'pier', 'canyon', 'everglades'];
 }
 
 /** Load the panel photos for this shot, in panel order. */
@@ -36,11 +43,15 @@ async function samplePhotos() {
 
 /** Per-panel focus offsets for the cover shots: the hero crop sits a touch
  *  high so the chase cars, not the sky, fill the big panel; the strip
- *  panels get their own small shifts. */
+ *  panels get their own small shifts. The two new r9 panels are wide,
+ *  short strips, so their crops pull DOWN hard to keep the hero in frame:
+ *  the canyon's orange muscle car sits low-right in its photo, and the
+ *  Everglades airboat + heron sit low in theirs — a centre crop would cut
+ *  both clean off. */
 const SHOT_CROPS = [
   { ox: 0, oy: -0.06 }, { ox: 0.08, oy: -0.04 },
   { ox: 0, oy: 0.08 }, { ox: -0.04, oy: -0.08 },
-  { ox: 0.06, oy: 0.06 }, { ox: -0.06, oy: 0.02 },
+  { ox: 0, oy: -0.50 }, { ox: 0, oy: -0.28 },
 ];
 
 /** Cover-only mode: render the real export PNG and show it full-bleed. */

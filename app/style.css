@@ -1,4 +1,4 @@
-/* VICE PURSUIT STUDIO — dark editor UI (rebuild r8, photo edition). */
+/* VICE PURSUIT STUDIO — dark editor UI (rebuild r9, six-panel edition). */
 
 @font-face {
   font-family: "Bebas Neue";
@@ -152,6 +152,15 @@ body {
 }
 .field-label span { color: var(--gold); }
 .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+/* Small explainer under a furniture toggle: why the HEAT badge reads
+ * ★★★★☆ and why the big wanted-stars pill is off by default (r9). */
+.furniture-note {
+  margin: 4px 0 2px 24px;
+  font-size: 11px;
+  color: var(--muted);
+  border-left: 2px solid var(--gold);
+  padding-left: 8px;
+}
 
 input[type="text"], select {
   width: 100%;

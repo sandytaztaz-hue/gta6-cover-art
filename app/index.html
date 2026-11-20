@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VICE PURSUIT STUDIO — GTA-style multi-panel magazine cover maker</title>
-<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel magazine cover. Three layouts, three grades, full-resolution PNG export — all offline.">
+<meta name="description" content="Turn your photos and a caption into a GTA-style six-panel magazine cover. Three layouts, three grades, full-resolution PNG export — all offline.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -49,7 +49,7 @@
           <button type="button" data-layout="five">Five panel</button>
           <button type="button" data-layout="hero">Hero + strip</button>
         </div>
-        <p class="hint" id="layoutHint">Hero left, three stacked right, billing strip below.</p>
+        <p class="hint" id="layoutHint">Hero left, five stacked right, billing strip below.</p>
       </div>
 
       <div class="group">
@@ -98,17 +98,19 @@
 
       <div class="group">
         <h2>Magazine furniture</h2>
-        <label class="check"><input id="wantedToggle" type="checkbox" checked> Wanted stars</label>
+        <label class="check"><input id="wantedToggle" type="checkbox"> Wanted stars</label>
         <label class="field-label" for="starCount">Star count</label>
         <select id="starCount">
-          <option value="0">0 — off</option>
+          <option value="0" selected>0 — off</option>
           <option value="3">3 stars</option>
           <option value="4">4 stars</option>
-          <option value="5" selected>5 stars</option>
+          <option value="5">5 stars</option>
         </select>
+        <p class="hint furniture-note">The big wanted-stars pill is off by default — it does not exist in HEATWAVE. The portrait and square variants still use it.</p>
         <label class="check"><input id="tagsToggle" type="checkbox" checked> Role tags (THE CLOSER…)</label>
         <label class="check"><input id="placesToggle" type="checkbox" checked> Location + time labels</label>
-        <label class="check"><input id="heatToggle" type="checkbox" checked> HEAT ★★★★★ badge</label>
+        <label class="check"><input id="heatToggle" type="checkbox" checked> HEAT ★★★★☆ badge</label>
+        <p class="hint furniture-note">HEAT reads four filled stars and one empty star, exactly like HEATWAVE. The quote strip keeps all five small stars.</p>
         <label class="check"><input id="sealToggle" type="checkbox" checked> HOT seal</label>
         <label class="check"><input id="quoteToggle" type="checkbox" checked> Newspaper quote</label>
         <label class="field-label" for="quoteInput">Quote</label>
@@ -178,7 +180,7 @@
   </main>
 
   <footer class="foot">
-    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). Sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
+    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). The ten sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
   </footer>
 </div>
 

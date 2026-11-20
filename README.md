@@ -8,9 +8,9 @@ Turn your photos and a caption into a GTA-style multi-panel magazine cover — i
 
 ## What it does
 
-- **3 multi-panel layouts** — Magazine (hero left, three stacked right, billing strip below — the HEATWAVE look), Five panel (1 hero + 4 small), Hero + strip (1 big + 3 small). Every panel is a drop zone.
+- **3 multi-panel layouts** — Magazine (hero left, five stacked right, billing strip below — the HEATWAVE look, six photographs in all), Five panel (1 hero + 4 small), Hero + strip (1 big + 3 small). Every panel is a drop zone.
 - **Any photo, any panel** — add photos from your device, drag-drop onto a panel, or load the built-in samples. One photo can fill all panels with different smart crops; each panel gets its own drag-to-position, zoom slider, and fit/cover switch, plus per-panel replace and clear.
-- **Magazine furniture** — a giant gradient headline (orange → pink → purple, like a magazine masthead) with a pink script sub-caption, role tags (THE CLOSER, THE DRIVER, THE FIXER…), location + time labels (CORAL CAUSEWAY · 7:15 PM), a HEAT ★★★★★ badge, a HOT starburst seal, an EST. 2026 seal, a newspaper quote ("HOTTER THAN THE ASPHALT" — THE PALM GAZETTE), the five-star GTA wanted HUD, and a bottom billing strip with VOL. 06 and a barcode. Every piece toggles on and off.
+- **Magazine furniture** — a giant gradient headline (orange → pink → purple, like a magazine masthead) with a pink script sub-caption, role tags (THE CLOSER, THE DRIVER, THE FIXER…), location + time labels (CORAL CAUSEWAY · 7:15 PM), a HEAT ★★★★☆ badge (four filled stars, one empty — exactly like HEATWAVE), a HOT starburst seal, an EST. 2026 seal, a newspaper quote ("HOTTER THAN THE ASPHALT" — THE PALM GAZETTE, all five small stars kept), and a bottom billing strip with VOL. 06 and a barcode. Every piece toggles on and off. The big five-star wanted pill at the top is OFF by default — it does not exist in HEATWAVE; only the portrait/square variants keep theirs.
 - **3 canvas grades** — Golden Hour, Neon, Vice Night, each with strength, contrast and saturation sliders, plus film grain (seeded, so exports are deterministic), vignette and halftone print dots.
 - **Title styles** — gradient fill, solid fill, or outline-only, in five colours, top or bottom.
 - **Stickers** — sun, palm, star, flame and badge marks you can drop on the cover.
@@ -19,7 +19,7 @@ Turn your photos and a caption into a GTA-style multi-panel magazine cover — i
 
 ## The look
 
-A magazine cover, not a single-photo filter: the hero photo stays bright on top (no dark overlay), the gradient headline spans the lower hero, and the collage panels, badges, seals and billing strip make it read as a newsstand cover. The default cover is the Magazine layout in Golden Hour: the sunny palm-boulevard chase hero (orange supercar + sport bike side by side, a police interceptor and a second bike chasing behind) fills the big panel, with the neon night woman, the rainy downtown and the misty fishing pier stacked on the right.
+A magazine cover, not a single-photo filter: the hero photo stays bright on top (no dark overlay), the gradient headline spans the lower hero, and the collage panels, badges, seals and billing strip make it read as a newsstand cover. The default cover is the Magazine layout in Golden Hour: the sunny palm-boulevard chase hero (orange supercar + sport bike side by side, a police interceptor and a second bike chasing behind) fills the big panel, with the neon night woman, the rainy downtown, the misty fishing pier, the desert canyon sunset getaway and the Everglades dusk smuggler stacked on the right — six photographs, six stories, no big star pill at the top, and the HEAT badge reading ★★★★☆ at the top-right corner, like HEATWAVE.
 
 ## How to use
 
@@ -30,7 +30,7 @@ A magazine cover, not a single-photo filter: the hero photo stays bright on top 
 
 ## Screenshots
 
-- `1-cover.jpg` — best exported cover (landscape 1920×1080, Magazine, Golden Hour) — the sunny chase hero front and centre, "VICE PURSUIT" / "Coastline Nights", wanted stars, HEAT badge, HOT seal, quote and billing strip
+- `1-cover.jpg` — best exported cover (landscape 1920×1080, Magazine, Golden Hour) — the sunny chase hero front and centre, six photo panels, "VICE PURSUIT" / "Coastline Nights", HEAT ★★★★☆ badge, HOT seal, quote and billing strip, no big wanted-stars pill
 - `2-editor.jpg` — the editor with the neon night scene loaded (Magazine, Golden Hour) — a different lead scene from the cover, so the editor shot never repeats the cover photo
 - `3-cover-portrait.jpg` — portrait cover (1080×1350, Hero + strip, Neon) — the neon night street as the hero panel, "NEON PURSUIT" / "City After Dark"
 - `4-cover-square.jpg` — square cover (1080×1080, Five panel, Vice Night) — the rainy downtown as the hero panel with the five-star wanted HUD, "VICE LIGHTS" / "One Last Job"
@@ -40,11 +40,11 @@ The covers are the PNGs the app itself wrote, scaled to JPEG for size. `shots.js
 ## Files
 
 - `app/index.html`, `app/style.css` — page and dark editor UI
-- `app/src/cover.js` — the cover engine: layouts, grades, headline, magazine furniture (role tags, location labels, HEAT badge, HOT seal, EST. 2026 seal, quote, billing strip, barcode), wanted-stars HUD, stickers, halftone, grain, vignette
+- `app/src/cover.js` — the cover engine: layouts, grades, headline, magazine furniture (role tags, location labels, HEAT ★★★★☆ badge, HOT seal, EST. 2026 seal, quote, billing strip, barcode), wanted-stars HUD (off by default; only the portrait/square variants use it), stickers, halftone, grain, vignette
 - `app/src/main.js` — editor state, controls, drag-drop, per-panel zoom/pan, smart crops, undo/redo, export
 - `app/src/shots.js` — deterministic `?shot=cover` / `?shot=editor` states
 - `app/fonts/` — Bebas Neue, Anton, Archivo Black (SIL Open Font License, OFL.txt beside each)
-- `app/samples/` — eight photographs made in this session, one distinct hero and one distinct atmosphere/weather each: the sunny palm-boulevard chase (orange supercar + sport bike, police interceptor and a second bike chasing behind), a rainy neon night with a woman in sunglasses and a red sports car, a golden-hour beach with a convertible and a surfer, a rainy downtown with a muscle car and a detective, a desert noon with a muscle car and a biker in the dust, a harbor dusk with a speedboat and a yacht, a rooftop night with a helicopter and a skyline, and a misty dawn fishing pier with a boat and a fisherman
+- `app/samples/` — ten photographs made in this session, one distinct hero and one distinct atmosphere/weather each: the sunny palm-boulevard chase (orange supercar + sport bike, police interceptor and a second bike chasing behind), a rainy neon night with a woman in sunglasses and a red sports car, a golden-hour beach with a convertible and a surfer, a rainy downtown with a muscle car and a detective, a desert noon with a muscle car and a biker in the dust, a harbor dusk with a speedboat and a yacht, a rooftop night with a helicopter and a skyline, a misty dawn fishing pier with a boat and a fisherman, a desert canyon sunset with an orange muscle car on a winding red-rock road, and an Everglades dusk with an airboat and a heron on a sawgrass marsh
 - `main.ts` — hands app/ + screenshots/ to /output with dossier.json (Node 22 stdlib only)
 - `serve.ts` — tiny static server for local tries
 - `tools/shot.mjs` — deterministic screenshot runner (headless Chrome over CDP)

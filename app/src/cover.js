@@ -1,4 +1,4 @@
-// VICE PURSUIT — magazine cover engine (rebuild r8, photo edition).
+// VICE PURSUIT — magazine cover engine (rebuild r9, six-panel edition).
 //
 // Plain canvas, no libraries, no network. One draw routine paints the live
 // preview and the full-resolution export, so what you see is exactly what
@@ -6,6 +6,29 @@
 // photographs in a panel collage, a giant gradient headline with a pink
 // script subtitle, role tags, location + time labels, a HEAT star badge, a
 // HOT seal, a newspaper quote, and a billing strip with a barcode.
+//
+// Rebuild r9 changes, per Sand's scribbled screenshot + the HEATWAVE
+// reference:
+//  - SIX photo panels on the main cover (was four): the hero stays big on
+//    the left, and FIVE panels stack on the right — the neon driver, the
+//    rainy fixer, the misty pier, plus two new photographs made in this
+//    session: a desert-canyon sunset getaway and an Everglades airboat at
+//    dusk. Every panel is a different hero, mood and weather.
+//  - The big five-star wanted pill at the top centre is GONE (Sand
+//    scribbled it out; it does not exist in HEATWAVE). wantedStars now
+//    defaults to 0, so the main cover never draws it. The portrait/square
+//    variants still pass &stars=5 and keep their own pills — they were not
+//    part of the scribble.
+//  - The small HEAT pill now matches HEATWAVE exactly: "HEAT ★★★★☆" —
+//    four filled gold stars and one EMPTY star (r8 had five filled). It
+//    sits at the frame's top-right corner, like HEATWAVE, instead of on
+//    the hero. The quote strip keeps all five small stars:
+//    "★★★★★ 'HOTTER THAN THE ASPHALT' — THE PALM GAZETTE".
+//  - The fourth right panel (THE GETAWAY, canyon sunset) sits in the
+//    headline's band, so its place + time ride inside its role tag instead
+//    of a bottom label the giant title would paint over.
+//  - The HOT seal shrinks and parks bottom-left on short stacked panels,
+//    so it never swallows the role tag above it.
 //
 // The photos stay bright on top — no dark overlay over the hero. The
 // headline sits across the lower hero so the cars and the chase stay
@@ -18,7 +41,7 @@ export const SIZES = {
 };
 
 export const LAYOUTS = {
-  magazine: { label: 'Magazine', panels: 4, hint: 'Hero left, three stacked right, billing strip below' },
+  magazine: { label: 'Magazine', panels: 6, hint: 'Hero left, five stacked right, billing strip below' },
   five: { label: 'Five panel', panels: 5, hint: '1 hero panel + 4 small below' },
   hero: { label: 'Hero + strip', panels: 4, hint: '1 big panel + 3 small below' },
 };
@@ -48,7 +71,10 @@ export const SUB_FONT = '"Anton", "Archivo Black", sans-serif';
 export const BODY_FONT = '"Archivo Black", "Anton", sans-serif';
 
 /** A fresh default state: Magazine layout, Golden Hour, the chase hero on
- *  top, VICE PURSUIT headline, all magazine furniture switched on. */
+ *  top, VICE PURSUIT headline, all magazine furniture switched on — except
+ *  the big wanted-stars pill, which is off by default in r9 (Sand had it
+ *  scribbled out of the main cover; it lives on only where a shot URL
+ *  explicitly asks for it with &stars=). */
 export function defaultState() {
   return {
     layout: 'magazine',
@@ -66,8 +92,10 @@ export function defaultState() {
     captionColor: 'gradient',
     titleStyle: 'gradient',
     captionPosition: 'bottom',
-    // GTA wanted level: 0 = off, 3-5 = solid gold stars top-right.
-    wantedStars: 5,
+    // GTA wanted level: 0 = off. The big pill is OFF by default in r9 —
+    // it does not exist in HEATWAVE. The portrait/square variants still
+    // pass &stars=5 and keep theirs.
+    wantedStars: 0,
     // Magazine furniture, all on by default — the cover is a magazine.
     roleTags: true,
     locationLabels: true,
@@ -83,7 +111,7 @@ export function defaultState() {
     stickers: [],
     // One slot per panel of the current layout; a slot holds
     // { img, zoom, ox, oy, fit } or null when the panel is empty.
-    panels: [null, null, null, null, null],
+    panels: [null, null, null, null, null, null],
   };
 }
 
@@ -119,19 +147,22 @@ export function layoutPanels(layout, W, H) {
       rect(2 * (sw + g), stripY, sw, stripH),
     ];
   }
-  // magazine: hero panel left (58% wide), three stacked panels right.
+  // magazine: hero panel left (54% wide), FIVE stacked panels right —
+  // six photographs in all, each a different hero / mood / weather.
   // The billing strip along the bottom is furniture, not a photo panel.
   const stripH = Math.round(H * 0.085);
   const bodyH = H - stripH - g;
-  const heroW = Math.round(W * 0.58);
+  const heroW = Math.round(W * 0.54);
   const rightX = heroW + g;
   const rightW = W - rightX;
-  const rh = (bodyH - 2 * g) / 3;
+  const rh = (bodyH - 4 * g) / 5;
   return [
     rect(0, 0, heroW, bodyH),
     rect(rightX, 0, rightW, rh),
     rect(rightX, rh + g, rightW, rh),
     rect(rightX, 2 * (rh + g), rightW, rh),
+    rect(rightX, 3 * (rh + g), rightW, rh),
+    rect(rightX, 4 * (rh + g), rightW, rh),
   ];
 }
 
@@ -161,15 +192,16 @@ export function layoutDividers(layout, W, H) {
   }
   const stripH = Math.round(H * 0.085);
   const bodyH = H - stripH - g;
-  const heroW = Math.round(W * 0.58);
+  const heroW = Math.round(W * 0.54);
   const rightX = heroW + g;
-  const rh = (bodyH - 2 * g) / 3;
-  return [
-    [[heroW + g / 2, 0], [heroW + g / 2, bodyH]],
-    [[rightX, rh + g / 2], [W, rh + g / 2]],
-    [[rightX, 2 * rh + 1.5 * g], [W, 2 * rh + 1.5 * g]],
-    [[0, bodyH + g / 2], [W, bodyH + g / 2]],
-  ];
+  const rh = (bodyH - 4 * g) / 5;
+  const divs = [[[heroW + g / 2, 0], [heroW + g / 2, bodyH]]];
+  for (let i = 1; i <= 4; i++) {
+    const y = i * rh + (i - 0.5) * g;
+    divs.push([[rightX, y], [W, y]]);
+  }
+  divs.push([[0, bodyH + g / 2], [W, bodyH + g / 2]]);
+  return divs;
 }
 
 /** Point-in-polygon hit test, for clicking a panel in the preview. */
@@ -330,9 +362,10 @@ function starPath(ctx, cx, cy, r) {
 
 /** GTA wanted-level HUD: N solid gold stars on a dark pill. Drawn as crisp
  *  vector shapes (never part of a photo) so the stars stay countable at any
- *  export size. rightX is the pill's right edge — the cover anchors it to
- *  the hero panel's top-right so it never covers the stacked right-column
- *  panels. */
+ *  export size. rightX is the pill's right edge. r9: the main cover never
+ *  draws this — wantedStars defaults to 0, because the big pill does not
+ *  exist in HEATWAVE. Only a shot URL that explicitly passes &stars=
+ *  (the portrait/square variants) turns it back on. */
 export function drawWantedStars(ctx, W, H, count, rightX) {
   const n = Math.max(0, Math.min(5, Math.round(count || 0)));
   if (n === 0) return;
@@ -419,7 +452,11 @@ function placeLabel(ctx, place, time, x, y, H, align = 'right') {
   ctx.restore();
 }
 
-/** HEAT ★★★★★ badge: dark pill, gold HEAT + five gold stars. */
+/** HEAT ★★★★☆ badge, exactly like HEATWAVE: dark pill, gold HEAT, four
+ *  FILLED gold stars and one EMPTY star — a gold outline over the dark
+ *  pill, no gold fill. r8 drew five filled stars; r9 leaves the fifth
+ *  star empty, so stars exist in exactly two small places on the cover:
+ *  this pill and the five small stars of the quote strip. */
 function heatBadge(ctx, x, y, H) {
   const fs = Math.max(13, Math.round(H * 0.028));
   ctx.save();
@@ -447,7 +484,16 @@ function heatBadge(ctx, x, y, H) {
   for (let i = 0; i < 5; i++) {
     const cx = bx + padX + tw + starR + i * (starR * 2 + gap);
     starPath(ctx, cx, y + pillH / 2, starR);
-    ctx.fill();
+    if (i < 4) {
+      ctx.fillStyle = '#ffc93c';
+      ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(8,6,16,0.6)';
+      ctx.fill();
+      ctx.strokeStyle = '#ffc93c';
+      ctx.lineWidth = Math.max(2, Math.round(starR * 0.14));
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -606,7 +652,9 @@ function drawHeadline(ctx, state, W, H, hero) {
 }
 
 /** Newspaper quote line: gold stars + quoted line + source. Scoped to the
- *  hero panel's width so it never runs across the stacked side panels. */
+ *  hero panel's width so it never runs across the stacked side panels.
+ *  The five small stars stay EXACTLY as they are — Sand's star rule
+ *  removes only the big pill; the quote keeps ★★★★★, like HEATWAVE. */
 function drawQuote(ctx, state, W, H, hero) {
   const quote = (state.quoteText || '').trim();
   if (!quote) return;
@@ -773,36 +821,58 @@ function halftone(ctx, W, H) {
   ctx.restore();
 }
 
+/** One row per panel: role tag, place and time. Six panels, six different
+ *  stories — sunny chase, neon night, rainy downtown, misty pier, desert
+ *  canyon sunset, Everglades dusk. Panel 4 (THE GETAWAY) is the one whose
+ *  bottom edge falls inside the giant headline's band, so in the magazine
+ *  grid its place + time ride inside the role tag instead of a bottom
+ *  label the title would paint over. Panel 5 (THE SMUGGLER) is worse —
+ *  even its TOP tag would hide behind the title — so its role + place +
+ *  time merge into one white pill at the panel's bottom-right. */
+const PANEL_META = [
+  { role: 'THE CLOSER', place: 'CORAL CAUSEWAY', time: '7:15 PM' },
+  { role: 'THE DRIVER', place: 'OCEAN DRIVE', time: '6:40 PM' },
+  { role: 'THE FIXER', place: 'VICE PORT', time: '11:58 PM' },
+  { role: 'THE LOOKOUT', place: 'PALM ROW', time: '9:02 PM' },
+  { role: 'THE GETAWAY', place: 'RED ROCK PASS', time: '6:02 PM' },
+  { role: 'THE SMUGGLER', place: 'GATOR FLATS', time: '5:31 PM' },
+];
+
 /** Role tags + location labels for each panel, magazine style. */
 function drawPanelFurniture(ctx, state, panels, W, H) {
-  const roles = ['THE CLOSER', 'THE DRIVER', 'THE FIXER', 'THE LOOKOUT', 'THE GETAWAY', 'THE INSIDE MAN'];
-  const places = [
-    ['CORAL CAUSEWAY', '7:15 PM'],
-    ['OCEAN DRIVE', '6:40 PM'],
-    ['VICE PORT', '11:58 PM'],
-    ['PALM ROW', '9:02 PM'],
-    ['THE MARINA', '5:47 PM'],
-    ['DOWNTOWN', '2:15 AM'],
-  ];
   panels.forEach((panel, i) => {
     if (panel.w < W * 0.15 || panel.h < H * 0.12) return;
+    const meta = PANEL_META[i];
+    if (!meta) return;
     const pad = Math.max(6, Math.round(W * 0.008));
-    if (state.roleTags && i < roles.length) {
-      tagPill(ctx, roles[i], panel.x + pad, panel.y + pad, H, 'left');
+    // Merged tags: only the magazine grid's fourth and fifth stacked
+    // panels need them (their bottom labels would sit under the headline,
+    // and panel 5's top tag would too). Other layouts keep the plain role
+    // tag + bottom label, as before.
+    const mergedTop = state.layout === 'magazine' && i === 4;
+    const mergedBottom = state.layout === 'magazine' && i === 5;
+    if (state.roleTags) {
+      if (mergedBottom) {
+        const fs = Math.max(12, Math.round(H * 0.024));
+        const pillH = fs + Math.round(fs * 0.45) * 2;
+        tagPill(ctx, `${meta.role} · ${meta.place} · ${meta.time}`, panel.x + panel.w - pad, panel.y + panel.h - pad - pillH, H, 'right');
+      } else {
+        const tag = mergedTop ? `${meta.role} · ${meta.place} · ${meta.time}` : meta.role;
+        tagPill(ctx, tag, panel.x + pad, panel.y + pad, H, 'left');
+      }
     }
-    if (state.locationLabels && i < places.length) {
+    if (state.locationLabels && !mergedTop && !mergedBottom) {
       // The hero's bottom is the headline's home — when the hero is short
       // the title fills its lower half, so the hero gets no location label
       // at all; the other panels keep theirs.
       const shortHero = i === 0 && panel.h < H * 0.8 && state.captionPosition === 'bottom';
       if (shortHero) return;
-      const [place, time] = places[i];
       // The hero's bottom is the headline's home — keep its location label
       // up at 62% of the hero height so the title never covers it.
       const labelY = i === 0
         ? panel.y + Math.round(panel.h * 0.62)
         : panel.y + panel.h - pad - Math.round(H * 0.045);
-      placeLabel(ctx, place, time, panel.x + panel.w - pad, labelY, H, 'right');
+      placeLabel(ctx, meta.place, meta.time, panel.x + panel.w - pad, labelY, H, 'right');
     }
   });
 }
@@ -864,30 +934,44 @@ export function drawCover(ctx, state, W, H) {
 
   drawPanelFurniture(ctx, state, panels, W, H);
 
-  // HEAT badge: on a tall hero it stacks below the wanted-stars pill; on
-  // a short hero the top of the frame is too crowded, so it moves to the
-  // top-right of the first strip panel instead.
+  // HEAT badge: on the six-panel magazine grid it sits at the frame's
+  // top-right corner, over the first stacked panel — exactly where
+  // HEATWAVE puts it. Other layouts keep the r8 placement (hero-anchored,
+  // or the last strip panel when the hero is short).
   if (state.heatBadge && panels[0]) {
-    const shortHero = panels[0].h < H * 0.8;
-    if (shortHero && panels[1]) {
-      // The badge is wider than one strip panel and the role tags sit at
-      // the strip's top — so park it mid-height of the last strip panel,
-      // right-aligned, over open photo area.
-      const last = panels[panels.length - 1];
-      heatBadge(ctx, W - Math.round(W * 0.015), last.y + Math.round(last.h * 0.45), H);
+    if (state.layout === 'magazine') {
+      heatBadge(ctx, W - Math.round(W * 0.015), Math.round(H * 0.03), H);
     } else {
-      const badgeY = state.wantedStars > 0
-        ? panels[0].y + Math.round(H * 0.165)
-        : panels[0].y + Math.round(H * 0.03);
-      heatBadge(ctx, panels[0].x + panels[0].w - Math.round(W * 0.015), badgeY, H);
+      const shortHero = panels[0].h < H * 0.8;
+      if (shortHero && panels[1]) {
+        // The badge is wider than one strip panel and the role tags sit at
+        // the strip's top — so park it mid-height of the last strip panel,
+        // right-aligned, over open photo area.
+        const last = panels[panels.length - 1];
+        heatBadge(ctx, W - Math.round(W * 0.015), last.y + Math.round(last.h * 0.45), H);
+      } else {
+        const badgeY = state.wantedStars > 0
+          ? panels[0].y + Math.round(H * 0.165)
+          : panels[0].y + Math.round(H * 0.03);
+        heatBadge(ctx, panels[0].x + panels[0].w - Math.round(W * 0.015), badgeY, H);
+      }
     }
   }
   if (state.hotSeal && panels.length > 1 && panels[1]) {
     // Keep the seal disc fully inside its panel — never clipped at an edge.
-    const sealR = Math.max(18, Math.round(H * 0.055));
-    const sx = Math.max(panels[1].x + sealR, panels[1].x + Math.round(panels[1].w * 0.12));
-    const sy = Math.max(panels[1].y + sealR, panels[1].y + Math.round(panels[1].h * 0.5));
-    hotSeal(ctx, sx, sy, sealR);
+    // On the six-panel grid the stacked panels are short, so a full-size
+    // seal would swallow the role tag: shrink it and park it bottom-left,
+    // clear of the tag above and the place label at bottom-right.
+    const p1 = panels[1];
+    if (p1.h < H * 0.25) {
+      const sealR = Math.max(16, Math.round(Math.min(H * 0.055, p1.h * 0.26)));
+      hotSeal(ctx, p1.x + sealR + Math.round(W * 0.006), p1.y + p1.h - sealR - Math.round(H * 0.012), sealR);
+    } else {
+      const sealR = Math.max(18, Math.round(H * 0.055));
+      const sx = Math.max(p1.x + sealR, p1.x + Math.round(p1.w * 0.12));
+      const sy = Math.max(p1.y + sealR, p1.y + Math.round(p1.h * 0.5));
+      hotSeal(ctx, sx, sy, sealR);
+    }
   }
 
   if (state.quote) drawQuote(ctx, state, W, H, panels[0]);
@@ -907,7 +991,10 @@ export function drawCover(ctx, state, W, H) {
   }
 
   // Wanted stars sit above everything else so they are never covered —
-  // anchored to the hero panel's top-right, not the frame corner.
+  // anchored to the hero panel's top-right, not the frame corner. r9: the
+  // main cover defaults to 0, so this draws nothing there; only a shot
+  // URL that explicitly passes &stars= (the portrait/square variants)
+  // draws a pill.
   drawWantedStars(ctx, W, H, state.wantedStars, panels[0] ? panels[0].x + panels[0].w - Math.round(W * 0.015) : undefined);
 
   if (state.halftone) halftone(ctx, W, H);

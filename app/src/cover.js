@@ -88,6 +88,36 @@ export const GOLDEN_MILE_SIZES = {
   landscape: { label: 'Wide · 1920 × 1080', width: 1920, height: 1080 },
 };
 
+// Per-size crop overrides, as deltas on a panel's own fx/fy/zoom. The
+// portrait DRIVER panel is much narrower than the square one, so the
+// default face point (fx 0.8) puts her nose on the panel's left edge;
+// in portrait only, pull the crop back a touch so her whole face sits
+// inside the frame with margin. Deltas (not absolutes) so dragging a
+// panel in the editor still moves it, and so every other panel and
+// size keeps its default crop exactly.
+export const GOLDEN_MILE_CROP_OVERRIDES = {
+  portrait: {
+    // -0.02 moved her nose from cut to ~3 px inside the edge (measured
+    // on the render); -0.04 left the nose ~3 px and the lips ~2 px from
+    // the edge — visible but tighter than the square renders. -0.05
+    // puts the nose ~10 px inside, matching images 1/2/4, with the ear
+    // still ~13 px clear of the right edge.
+    'THE DRIVER': { fx: -0.05 },
+  },
+};
+
+// Resolve the effective { fx, fy, zoom } for one panel at one post size.
+// Both render paths (DOM preview in main.js, PNG export below) must call
+// this, so the screenshot and the exported PNG always agree.
+export function goldenMilePanelCrop(panel, sizeId) {
+  const over = GOLDEN_MILE_CROP_OVERRIDES[sizeId]?.[panel.role];
+  return {
+    fx: Math.min(1, Math.max(0, panel.fx + (over?.fx ?? 0))),
+    fy: Math.min(1, Math.max(0, panel.fy + (over?.fy ?? 0))),
+    zoom: (panel.zoom || 1) * (over?.zoom ?? 1),
+  };
+}
+
 // Fresh default state: the Golden Mile cover, golden grade, square.
 export function goldenMileDefaultState() {
   return {
@@ -154,16 +184,17 @@ const LABEL_FONT = '"Archivo Black", sans-serif';
 const SCRIPT_FONT = '"Segoe Script", "Snell Roundhand", cursive';
 
 // Draw one photo into its cell, cover-fitting around the face point.
-function drawGoldenMilePhoto(ctx, img, rect, panel, grade) {
+function drawGoldenMilePhoto(ctx, img, rect, panel, grade, sizeId) {
+  const crop = goldenMilePanelCrop(panel, sizeId);
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const zoom = panel.zoom || 1;
+  const zoom = crop.zoom || 1;
   const scale = Math.max(rect.w / iw, rect.h / ih) * zoom;
   const dw = iw * scale;
   const dh = ih * scale;
   // Keep the face point at the cell centre as far as the photo allows.
-  const cx = panel.fx * dw;
-  const cy = panel.fy * dh;
+  const cx = crop.fx * dw;
+  const cy = crop.fy * dh;
   let dx = rect.x + rect.w / 2 - cx;
   let dy = rect.y + rect.h / 2 - cy;
   dx = Math.min(rect.x, Math.max(rect.x + rect.w - dw, dx));
@@ -266,7 +297,7 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   for (const panel of state.panels) {
     const img = images[panel.src];
     if (!img) continue;
-    drawGoldenMilePhoto(ctx, img, goldenMileCellRect(layout, W, H, panel.role), panel, grade);
+    drawGoldenMilePhoto(ctx, img, goldenMileCellRect(layout, W, H, panel.role), panel, grade, state.size);
   }
 
   // Masthead strip.

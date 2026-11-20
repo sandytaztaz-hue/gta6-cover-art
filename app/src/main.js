@@ -14,6 +14,7 @@ import {
   GOLDEN_MILE_GRADE_IDS,
   GOLDEN_MILE_SIZES,
   goldenMileDefaultState,
+  goldenMilePanelCrop,
   drawGoldenMileCover,
   exportGoldenMilePng,
 } from './cover.js';
@@ -80,15 +81,18 @@ function buildGoldenMileCoverEl() {
     img.src = panel.src;
     img.alt = panel.role;
     img.draggable = false;
-    img.style.objectPosition = `${panel.fx * 100}% ${panel.fy * 100}%`;
+    // Same per-size crop the PNG renderer uses, so the preview and the
+    // export always agree (portrait DRIVER is pulled back a touch).
+    const crop = goldenMilePanelCrop(panel, state.size);
+    img.style.objectPosition = `${crop.fx * 100}% ${crop.fy * 100}%`;
     if (panel.flip) img.style.transform = 'scaleX(-1)';
-    if (panel.zoom && panel.zoom !== 1) {
-      img.style.width = `${panel.zoom * 100}%`;
-      img.style.height = `${panel.zoom * 100}%`;
+    if (crop.zoom && crop.zoom !== 1) {
+      img.style.width = `${crop.zoom * 100}%`;
+      img.style.height = `${crop.zoom * 100}%`;
       img.style.maxWidth = 'none';
       img.style.maxHeight = 'none';
-      img.style.left = `${(1 - panel.zoom) * 50}%`;
-      img.style.top = `${(1 - panel.zoom) * 50}%`;
+      img.style.left = `${(1 - crop.zoom) * 50}%`;
+      img.style.top = `${(1 - crop.zoom) * 50}%`;
     }
     cell.appendChild(img);
     const wash = document.createElement('div');

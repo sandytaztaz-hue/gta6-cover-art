@@ -19,7 +19,7 @@ export const GOLDEN_MILE_CREDITS =
 // one photo-realistic panel per role. fx/fy is the face (or subject)
 // point the crop keeps centred, as a fraction of the photo.
 export const GOLDEN_MILE_PANELS = [
-  { role: 'THE DRIVER', file: 'dark-driver.jpg', fx: 0.5, fy: 0.34 },
+  { role: 'THE DRIVER', file: 'vice-driver.jpg', fx: 0.8, fy: 0.38 },
   { role: 'THE FIXER', file: 'vice-fixer.jpg', fx: 0.74, fy: 0.22 },
   { role: 'HERO', file: 'crime-insider.jpg', fx: 0.56, fy: 0.4 },
   { role: 'THE SMUGGLER', file: 'vice-everglades.jpg', fx: 0.3, fy: 0.6 },
@@ -194,7 +194,15 @@ function drawGoldenMilePhoto(ctx, img, rect, panel, grade) {
     const tw = ctx.measureText(panel.role).width;
     const pad = fs * 0.55;
     const bx = rect.x + rect.w * 0.04;
-    const by = rect.y + rect.h - fs * 2.1;
+    // THE BOSS fills the bottom-right corner of the grid, so a
+    // bottom-left chip would sit under the gold BEST SELLER seal (the
+    // seal spans the panel's whole bottom-left corner) and the ribbon
+    // bar leaves no gap above the seal either. Its chip goes top-left
+    // instead — same pill, same gold text, fully visible.
+    const by =
+      panel.role === 'THE BOSS'
+        ? rect.y + rect.h * 0.04
+        : rect.y + rect.h - fs * 2.1;
     ctx.fillStyle = 'rgba(10, 4, 12, 0.88)';
     ctx.fillRect(bx, by, tw + pad * 2, fs * 1.7);
     ctx.fillStyle = '#ffd23e';

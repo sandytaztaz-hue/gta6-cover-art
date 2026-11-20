@@ -1,4 +1,4 @@
-// VICE PURSUIT STUDIO — entry program (Node 22, standard library only).
+// SUNREEL — poster cover studio (rebuild r11, entry program, Node 22 stdlib only).
 //
 // The app is this directory's app/ folder: plain static files a desktop
 // browser loads offline (app/index.html and its ES modules, no library, no
@@ -7,35 +7,28 @@
 // /output/dossier.json, the summary the judge reads, with the vendored
 // make.fun library.
 //
-// The cover maker itself: a four-variant poster studio in the SUNSET
-// SYNDICATE collage style — Sunset Chase, Neon Nights, Golden Coast and
-// Full Throttle — each five distinct photographs in a two-row grid with
-// the giant VICE PURSUIT headline in a band across the middle, a yellow
-// label pill on every panel, a gold CERTIFIED NO.1 seal, a COMING SOON
-// corner badge and a cream bottom strip with a small-star quote, a
-// production line and a barcode. Switching a variant swaps its five
-// photos, its grade and its strip line in one click; the title stays
-// VICE PURSUIT / Coastline Nights on every variant. Three canvas grades
-// (Golden Hour, Neon, Vice Night) with strength / contrast / saturation /
-// grain / vignette / halftone controls, title styles in five colours,
-// stickers, undo/redo, per-panel zoom and pan, smart crops, and
-// full-resolution PNG export at 1080×1080, 1080×1350 and 1920×1080. The
-// big wanted-stars pill is OFF by default on every variant — it does not
-// exist in the reference, and the HEAT pill reads ★★★★☆ (four filled,
-// one empty) with five small stars on the quote strip only. Its
-// twenty-one sample photos (app/samples/) are
-// real photographs made in this session — one distinct hero and one
-// distinct atmosphere/weather per photo: the sunny palm boulevard chase
-// (orange supercar + sport bike, police behind), a neon night driver with
-// her whole head in frame, a rainy downtown, a misty dawn fishing pier, a
-// desert canyon sunset with an orange muscle car, an Everglades dusk with
-// an airboat and a heron, a neon strip street, a sunny coast with a
-// vintage convertible, a classic muscle car at golden hour, a vintage
-// pink Cadillac at sunset, a modern white racer at sunset, a dusk
-// charmer leaning on a classic convertible, a sunset biker, a palm
-// boulevard at night, a garage mechanic at night, and a modern +
-// classic duo racing side by side at sunset — plus the golden beach,
-// desert noon, harbour dusk and rooftop night from the earlier editions.
+// The cover maker itself: a SUNREEL poster studio with four cover
+// variants — V1 VICE PURSUIT (Sunset Chase, the approved r10 cover,
+// unchanged), CITY OF CRIME (Diagonal trio, 3 photos), AFTER DARK
+// (Hero + three, 4 photos) and MIDNIGHT RUNNERS (Six grid, 6 photos) —
+// each with its own title, script, tagline, quote, grade and strip line,
+// in five SUNREEL layouts with six grades, live caption editing, panel
+// controls (zoom, flip, swap, face, name tag), LOOK & TITLE sliders
+// (Paint, Grade, Halftone, Grain, Glow), and full-resolution PNG export
+// at 1080×1080, 1080×1350 and 1920×1080. The big wanted-stars pill is
+// OFF by default on every variant — it does not exist in the reference,
+// and the HEAT pill reads ★★★★☆ (four filled, one empty) with five
+// small stars on the quote strip only. Its thirty-four sample photos
+// (app/samples/) are real photographs made in this session — V1's five
+// (the sunny palm boulevard chase with orange supercar + sport bike and
+// police behind, the neon night driver, the rainy downtown fixer, the
+// desert canyon sunset getaway and the Everglades dusk wildcard) plus
+// the thirteen r11 additions (a rainy insider, a fire-escape lookout,
+// a yellow tunnel chase, a blue coupe on a wet boulevard, a night
+// market, a truck woman at a gas station, a police helicopter
+// searchlight, a vintage green pickup, a drive-in diner, a motel bike,
+// a skater at sunset, a speedboat at dusk and a skyline overlook) and
+// the sixteen older samples.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
@@ -51,10 +44,9 @@ import { buildDossier } from './vendor/makefun-app.ts';
 // 4 screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB
 // of app files, in all, or a path under app/ over 1000 bytes: app/ counts
 // beside /output's own 1000-entry cap, its screenshots/ and dossier.json).
-// NOTE (r10): the brief now asks for SEVEN screenshots (the standard four
-// plus one per extra variant) in screenshots/ — that is more than the
-// scorer's 4-screenshot cap above, so the hand-in step needs a call on
-// which four to submit; the repo keeps all seven for review.
+// NOTE (r11): the entry ships exactly FOUR screenshots in screenshots/
+// (V1 cover, editor, CITY OF CRIME portrait, AFTER DARK square) — inside
+// the scorer's 4-screenshot cap above.
 const DOSSIER_CAPS = {
   text_max_bytes: 163840,
   screenshots: { max: 4, max_bytes: 262144 },

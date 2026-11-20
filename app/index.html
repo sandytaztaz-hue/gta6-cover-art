@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VICE PURSUIT STUDIO — GTA-style multi-panel poster studio</title>
-<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel poster. Four cover variants, twenty-one photographs, full-resolution PNG export — all offline.">
+<title>SUNREEL — poster cover studio</title>
+<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel poster. Four cover variants, thirty-four photographs, full-resolution PNG export — all offline.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,29 +13,42 @@
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">☀</span>
       <div>
-        <h1>VICE PURSUIT STUDIO</h1>
-        <p class="tagline">Four GTA-style poster variants, made from your photos</p>
+        <h1>SUNREEL</h1>
+        <p class="tagline">poster cover studio</p>
       </div>
     </div>
-    <div class="steps" role="list" aria-label="Three steps">
-      <span class="step" id="step1" role="listitem"><b>1</b> Pick a variant</span>
-      <span class="step" id="step2" role="listitem"><b>2</b> Layout + caption</span>
+    <nav class="steps" role="list" aria-label="Three steps">
+      <span class="step" id="step1" role="listitem"><b>1</b> Add photos</span>
+      <span class="step arrow" aria-hidden="true">→</span>
+      <span class="step" id="step2" role="listitem"><b>2</b> Caption</span>
+      <span class="step arrow" aria-hidden="true">→</span>
       <span class="step" id="step3" role="listitem"><b>3</b> Export PNG</span>
-    </div>
+    </nav>
     <div class="history" role="group" aria-label="Undo and redo">
       <button id="undoBtn" type="button" disabled>↶ Undo</button>
       <button id="redoBtn" type="button" disabled>↷ Redo</button>
+      <button id="helpBtn" type="button" title="Drag to pan · wheel or corner handles to zoom · Shift-drag onto a panel to swap · double-click resets · drop a photo on a panel to place it">?</button>
     </div>
   </header>
 
+  <!-- SUNREEL studio: three columns — photos/caption left, preview centre, export/look right. -->
   <main class="layout">
-    <section class="controls" aria-label="Cover controls">
+    <!-- ================= LEFT: photos, variant, layout, grade, caption ================= -->
+    <section class="controls left" aria-label="Photos and caption">
       <div class="group">
-        <h2>Photos</h2>
-        <label class="file-btn" for="photoInput">Add photos…</label>
+        <h2><span class="step-num">1</span> Add photos</h2>
+        <button id="addPhotosBtn" type="button" class="file-btn">+ Add photos</button>
+        <span class="hint inline">or drop · paste</span>
         <input id="photoInput" type="file" accept="image/*" multiple hidden>
         <input id="replaceInput" type="file" accept="image/*" hidden>
-        <p class="hint">Drop photos onto the preview, or onto a panel. Each panel takes its own photo — or use one photo for all panels.</p>
+        <div class="photo-grid" id="photoGrid" aria-label="Built-in sample photos"></div>
+        <div class="row">
+          <button id="showAllPhotosBtn" type="button">Show all 34 photos</button>
+        </div>
+        <div class="row">
+          <button id="autoLayoutBtn" type="button">⟳ Auto layout</button>
+          <button id="surpriseBtn" type="button">✦ Surprise me</button>
+        </div>
         <div class="row">
           <button id="sampleBtn" type="button">Try a sample</button>
           <button id="fillAllBtn" type="button">One photo, all panels</button>
@@ -45,30 +58,46 @@
       <div class="group variant-group">
         <h2>Cover variant</h2>
         <div class="btn-row variant-row" role="group" aria-label="Cover variant">
-          <button type="button" data-layout="sunset">🌅 Sunset Chase</button>
-          <button type="button" data-layout="neon">🌃 Neon Nights</button>
-          <button type="button" data-layout="coast">🏖️ Golden Coast</button>
-          <button type="button" data-layout="throttle">🏁 Full Throttle</button>
+          <button type="button" data-variant="sunset">🌅 VICE PURSUIT</button>
+          <button type="button" data-variant="crime">🌃 CITY OF CRIME</button>
+          <button type="button" data-variant="dark">🌙 AFTER DARK</button>
+          <button type="button" data-variant="runners">🏁 MIDNIGHT RUNNERS</button>
         </div>
-        <p class="hint" id="variantHint">Five distinct photographs per variant — a different hero, mood and weather in every panel.</p>
-        <p class="hint">Switching a variant swaps its five photos, its grade and its strip line in one click. The title stays VICE PURSUIT on every variant.</p>
+        <p class="hint">Switching a variant swaps its photos, title, script, tagline, quote, grade and strip line in one click. VICE PURSUIT is the approved r10 cover, unchanged.</p>
       </div>
 
       <div class="group">
         <h2>Layout</h2>
-        <div class="btn-row" role="group" aria-label="Layout">
-          <button type="button" data-layout="five">Five panel</button>
-          <button type="button" data-layout="hero">Hero + strip</button>
+        <div class="layout-grid" role="group" aria-label="Layout">
+          <button type="button" data-layout="hero-mosaic"><span class="layout-ico" aria-hidden="true">▦</span>Hero mosaic</button>
+          <button type="button" data-layout="hero-three"><span class="layout-ico" aria-hidden="true">▤</span>Hero + three</button>
+          <button type="button" data-layout="sixgrid"><span class="layout-ico" aria-hidden="true">▦</span>Six grid</button>
+          <button type="button" data-layout="diagonal"><span class="layout-ico" aria-hidden="true">◢</span>Diagonal trio</button>
+          <button type="button" data-layout="seven"><span class="layout-ico" aria-hidden="true">▦</span>Seven mosaic</button>
         </div>
         <p class="hint" id="layoutHint">Hero chase wide top-left, driver top-right, fixer / getaway / wildcard below.</p>
       </div>
 
       <div class="group">
-        <h2>Caption</h2>
-        <label class="field-label" for="captionInput">Main caption</label>
+        <h2>Grade</h2>
+        <div class="btn-row grade-row" role="group" aria-label="Grade">
+          <button type="button" data-grade="sunset">Sunset</button>
+          <button type="button" data-grade="neon">Neon night</button>
+          <button type="button" data-grade="golden">Golden hour</button>
+          <button type="button" data-grade="tropic">Tropic teal</button>
+          <button type="button" data-grade="heatwave">Heatwave</button>
+          <button type="button" data-grade="ultraviolet">Ultraviolet</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2><span class="step-num">2</span> Caption</h2>
+        <label class="field-label" for="captionInput">Title</label>
         <input id="captionInput" type="text" maxlength="40" value="VICE PURSUIT" autocomplete="off">
-        <label class="field-label" for="subInput">Script sub-caption</label>
-        <input id="subInput" type="text" maxlength="60" value="Coastline Nights" autocomplete="off">
+        <label class="field-label" for="scriptInput">Script</label>
+        <input id="scriptInput" type="text" maxlength="60" value="Coastline Nights" autocomplete="off">
+        <label class="field-label" for="taglineInput">Tagline</label>
+        <input id="taglineInput" type="text" maxlength="60" value="" autocomplete="off" placeholder="Three faces · one long night">
         <div class="btn-row" role="group" aria-label="Caption colour">
           <button type="button" data-color="gradient">Gradient</button>
           <button type="button" data-color="white">White</button>
@@ -86,42 +115,92 @@
           <button type="button" data-pos="bottom">Bottom</button>
         </div>
       </div>
+    </section>
+
+    <!-- ================= CENTER: size switcher + cover preview ================= -->
+    <section class="stage" aria-label="Live preview">
+      <div class="size-bar" role="group" aria-label="Aspect ratio">
+        <button type="button" data-size="square">▢ 1:1&nbsp; 1080 × 1080</button>
+        <button type="button" data-size="portrait">▯ 4:5&nbsp; 1080 × 1350</button>
+        <button type="button" data-size="landscape">▭ 16:9&nbsp; 1920 × 1080</button>
+      </div>
+      <div class="preview-wrap" id="stageDrop">
+        <canvas id="preview" aria-label="Cover preview"></canvas>
+      </div>
+      <div class="panel-bar">
+        <span id="panelLabel">Panel 1 — empty</span>
+        <div class="panel-dots" role="group" aria-label="Pick a panel">
+          <button type="button" class="panel-dot" aria-label="Panel 1">1</button>
+          <button type="button" class="panel-dot" aria-label="Panel 2">2</button>
+          <button type="button" class="panel-dot" aria-label="Panel 3">3</button>
+          <button type="button" class="panel-dot" aria-label="Panel 4">4</button>
+          <button type="button" class="panel-dot" aria-label="Panel 5">5</button>
+          <button type="button" class="panel-dot" aria-label="Panel 6">6</button>
+          <button type="button" class="panel-dot" aria-label="Panel 7">7</button>
+        </div>
+      </div>
+      <div class="panel-tools">
+        <button id="replaceBtn" type="button">Replace photo</button>
+        <button id="clearPanelBtn" type="button">Clear panel</button>
+      </div>
+      <p class="hint">Click a panel to select it, then drag the photo to move it. Zoom and fit are per panel.</p>
+      <p class="hint">Drag to pan · wheel or corner handles to zoom · Shift-drag onto a panel to swap · double-click resets · drop a photo on a panel to place it</p>
+    </section>
+
+    <!-- ================= RIGHT: export, panel controls, look & title ================= -->
+    <section class="controls right" aria-label="Export and look">
+      <div class="group export-group">
+        <h2><span class="step-num">3</span> Export PNG</h2>
+        <div class="export-list">
+          <button type="button" data-export-size="square"><b>1080 × 1080 PNG</b><span>Square post · 1:1</span></button>
+          <button type="button" data-export-size="portrait"><b>1080 × 1350 PNG</b><span>Portrait post · 4:5</span></button>
+          <button type="button" data-export-size="landscape"><b>1920 × 1080 PNG</b><span>Wide banner · 16:9</span></button>
+        </div>
+        <button id="exportAllBtn" type="button" class="export">⬇ Export all three</button>
+        <button id="exportBtn" type="button" class="export ghost">Export PNG (current size)</button>
+        <p class="hint" id="exportNote">Add a photo first, or try a sample below.</p>
+      </div>
 
       <div class="group">
-        <h2>Grade</h2>
-        <div class="btn-row" role="group" aria-label="Grade">
-          <button type="button" data-grade="golden">Golden Hour</button>
-          <button type="button" data-grade="neon">Neon</button>
-          <button type="button" data-grade="vice">Vice Night</button>
+        <h2>Panel</h2>
+        <p class="hint panel-note" id="panelNote">Panel 1 of 5 — click a panel in the preview to select it.</p>
+        <label class="field-label" for="zoom">Zoom <span id="zoomVal"></span></label>
+        <input id="zoom" type="range" min="1" max="3" step="0.01" value="1">
+        <div class="btn-row">
+          <button id="prevPhotoBtn" type="button">◀ Photo</button>
+          <button id="nextPhotoBtn" type="button">Photo ▶</button>
         </div>
-        <label class="field-label" for="intensity">Strength <span id="intensityVal"></span></label>
-        <input id="intensity" type="range" min="0" max="1" step="0.05" value="0.75">
-        <label class="field-label" for="contrast">Contrast <span id="contrastVal"></span></label>
-        <input id="contrast" type="range" min="0.5" max="1.8" step="0.02" value="1.06">
-        <label class="field-label" for="saturation">Saturation <span id="saturationVal"></span></label>
-        <input id="saturation" type="range" min="0" max="2" step="0.05" value="1.25">
+        <div class="btn-row">
+          <button id="resetPanelBtn" type="button">Reset</button>
+          <button id="flipBtn" type="button">⇄ Flip</button>
+          <button id="swapBtn" type="button">⇄ Swap</button>
+          <button id="faceBtn" type="button">◉ Face</button>
+        </div>
+        <label class="check"><input id="nameTagToggle" type="checkbox" checked> Name tag</label>
+      </div>
+
+      <div class="group">
+        <h2>Look &amp; title</h2>
+        <label class="field-label" for="paintSlider">Paint <span id="paintVal"></span></label>
+        <input id="paintSlider" type="range" min="0" max="100" step="1" value="62">
+        <label class="field-label" for="gradeSlider">Grade <span id="gradeVal"></span></label>
+        <input id="gradeSlider" type="range" min="0" max="100" step="1" value="75">
+        <label class="field-label" for="halftoneSlider">Halftone <span id="halftoneVal"></span></label>
+        <input id="halftoneSlider" type="range" min="0" max="100" step="1" value="20">
+        <label class="field-label" for="grainSlider">Grain <span id="grainVal"></span></label>
+        <input id="grainSlider" type="range" min="0" max="100" step="1" value="50">
+        <label class="field-label" for="glowSlider">Glow <span id="glowVal"></span></label>
+        <input id="glowSlider" type="range" min="0" max="100" step="1" value="50">
         <label class="check"><input id="grainToggle" type="checkbox" checked> Film grain</label>
-        <label class="field-label" for="grainAmount">Grain amount <span id="grainVal"></span></label>
-        <input id="grainAmount" type="range" min="0" max="1" step="0.05" value="0.5">
         <label class="check"><input id="vignetteToggle" type="checkbox" checked> Vignette</label>
         <label class="check"><input id="halftoneToggle" type="checkbox"> Halftone print dots</label>
       </div>
 
       <div class="group">
         <h2>Magazine furniture</h2>
-        <label class="check"><input id="wantedToggle" type="checkbox"> Wanted stars</label>
-        <label class="field-label" for="starCount">Star count</label>
-        <select id="starCount">
-          <option value="0" selected>0 — off</option>
-          <option value="3">3 stars</option>
-          <option value="4">4 stars</option>
-          <option value="5">5 stars</option>
-        </select>
-        <p class="hint furniture-note">The big wanted-stars pill is off by default — it does not exist in SUNSET SYNDICATE. No variant uses it.</p>
         <label class="check"><input id="tagsToggle" type="checkbox" checked> Role tags (THE RIDE…)</label>
-        <label class="check"><input id="placesToggle" type="checkbox" checked> Location + time labels</label>
         <label class="check"><input id="heatToggle" type="checkbox" checked> HEAT ★★★★☆ badge</label>
-        <p class="hint furniture-note">HEAT reads four filled stars and one empty star, exactly like HEATWAVE. The quote strip keeps all five small stars.</p>
+        <p class="hint furniture-note">HEAT reads four filled stars and one empty star, exactly like HEATWAVE. The quote strip keeps all five small stars. No big star pill anywhere.</p>
         <label class="check"><input id="sealToggle" type="checkbox" checked> CERTIFIED NO.1 seal</label>
         <label class="check"><input id="quoteToggle" type="checkbox" checked> Newspaper quote</label>
         <label class="field-label" for="quoteInput">Quote</label>
@@ -147,50 +226,11 @@
         </div>
         <p class="hint">Stickers land in the middle of the cover — drag the preview to move a photo, not a sticker.</p>
       </div>
-
-      <div class="group">
-        <h2>Size</h2>
-        <div class="btn-row" role="group" aria-label="Export size">
-          <button type="button" data-size="square">1080 × 1080</button>
-          <button type="button" data-size="portrait">1080 × 1350</button>
-          <button type="button" data-size="landscape">1920 × 1080</button>
-        </div>
-      </div>
-
-      <div class="group export-group">
-        <button id="exportBtn" type="button" class="export">Export PNG</button>
-        <p class="hint" id="exportNote">Add a photo first, or try a sample below.</p>
-      </div>
-    </section>
-
-    <section class="stage" aria-label="Live preview">
-      <div class="preview-wrap" id="stageDrop">
-        <canvas id="preview" aria-label="Cover preview"></canvas>
-      </div>
-      <div class="panel-bar">
-        <span id="panelLabel">Panel 1 — empty</span>
-        <div class="panel-dots" role="group" aria-label="Pick a panel">
-          <button type="button" class="panel-dot" aria-label="Panel 1">1</button>
-          <button type="button" class="panel-dot" aria-label="Panel 2">2</button>
-          <button type="button" class="panel-dot" aria-label="Panel 3">3</button>
-          <button type="button" class="panel-dot" aria-label="Panel 4">4</button>
-          <button type="button" class="panel-dot" aria-label="Panel 5">5</button>
-        </div>
-      </div>
-      <div class="panel-tools">
-        <label class="field-label" for="zoom">Zoom</label>
-        <input id="zoom" type="range" min="1" max="3" step="0.01" value="1">
-        <button id="fitBtn" type="button">Fit: fill panel</button>
-        <button id="replaceBtn" type="button">Replace photo</button>
-        <button id="clearPanelBtn" type="button">Clear panel</button>
-      </div>
-      <p class="hint">Click a panel to select it, then drag the photo to move it. Zoom and fit are per panel.</p>
-      <div class="sample-strip" id="sampleStrip" aria-label="Built-in sample photos"></div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). The twenty-one sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
+    <p>SUNREEL — poster cover studio. Your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). The thirty-four sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
   </footer>
 </div>
 

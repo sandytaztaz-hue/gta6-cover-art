@@ -1,44 +1,42 @@
-// VICE PURSUIT — cover engine (rebuild r10, four-variant edition).
+// SUNREEL — cover engine (rebuild r11, SUNREEL poster studio edition).
 //
 // Plain canvas, no libraries, no network. One draw routine paints the live
 // preview and the full-resolution export, so what you see is exactly what
-// the PNG holds. The look imitates the SUNSET SYNDICATE reference Sand
-// named: a multi-panel photo collage, a giant gradient headline in a band
-// across the middle of the grid, a small YELLOW label pill on every panel,
-// a gold round seal, a COMING SOON corner badge, and a bottom strip with a
-// small-star quote, a production line and a barcode.
+// the PNG holds. The look follows the SUNREEL reference: a multi-panel
+// photo collage, a giant gradient headline in its own dark band between
+// the panels (never painted over a photo), a small YELLOW label pill on
+// every panel, a gold CERTIFIED NO.1 seal, a COMING SOON corner badge,
+// and a cream bottom strip with a small-star quote, a production line
+// and a barcode.
 //
-// Rebuild r10 changes, per Sand's expanded brief (four variants, not one):
-//  - FOUR cover variants, each a full collage in the same SUNSET SYNDICATE
-//    grid language, each with FIVE distinct photographs — a different hero,
-//    mood, weather and location per panel, and different across variants
-//    where possible. Sunset Chase (sunny chase hero + neon driver + rainy
-//    fixer + canyon getaway + Everglades wildcard), Neon Nights (neon strip
-//    + blonde charmer + rooftop + palm boulevard + classic muscle), Golden
-//    Coast (sunny coast + beach + misty pier + vintage Cadillac + modern
-//    sunset racer), Full Throttle (modern + classic duo + biker + garage
-//    mechanic + harbour + desert). Modern AND classic cars both appear,
-//    and every variant carries the same VICE PURSUIT / Coastline Nights
-//    title. The old magazine / five / hero layouts stay as legacy options.
-//  - THE TITLE NEVER COVERS A SUBJECT. The headline lives in its own dark
-//    band between the two panel rows — a real gap in the grid, not paint
-//    over a photo — so the orange Lambo, the red/black Ducati, the police
-//    cars and every face stay fully visible. Sand's hard rule, by
-//    construction: no photo pixel sits under the title band.
-//  - THE DRIVER IS NEVER CROPPED. Both driver photographs were shot in
-//    this session framed from mid-torso up with clear sky above the hair,
-//    and their smart crops keep the whole head in frame (oy pulls the
-//    window up, never down). The yellow pill sits at the panel's
-//    bottom-left, over her jacket — never over her face.
-//  - Yellow label pills on EVERY panel (role only, like the reference),
-//    a gold CERTIFIED NO.1 round seal inside the title band, a COMING SOON
-//    badge at the top-left corner, and a cream bottom strip carrying the
-//    five small quote stars, the production line, the strip text and the
-//    barcode. Story count is now FIVE STORIES per variant.
+// Rebuild r11 changes, per the final spec (Sand approved V1 as DONE):
+//  - V1 (VICE PURSUIT / Sunset Chase) is UNCHANGED from r10: same five
+//    photographs, same collage grid, same Golden Hour grade, same strip
+//    line, same title band. Its geometry below is byte-for-byte the r10
+//    geometry, so a fresh render of V1 looks identical to r10's cover.
+//  - THREE new variants, each a different title, script, tagline, grade,
+//    strip line and photo set — and a different layout, so no two covers
+//    share a silhouette:
+//      CITY OF CRIME — Diagonal trio, 3 diagonal panels (rainy insider,
+//        fire-escape lookout, yellow tunnel chase), Neon night grade.
+//      AFTER DARK — Hero + three, 4 panels (blue coupe hero, night
+//        market, truck woman, police helicopter), Ultraviolet grade.
+//      MIDNIGHT RUNNERS — Six grid, 6 panels (green pickup, diner,
+//        motel bike, skater, speedboat, skyline), Sunset grade.
+//    Story counts match panel counts: FIVE / THREE / FOUR / SIX STORIES.
+//  - FIVE editor layouts (Hero mosaic, Hero + three, Six grid, Diagonal
+//    trio, Seven mosaic) plus the four variant grids; every layout uses
+//    the same title band + bottom strip, so the headline can never cover
+//    a car, a bike or a face on any layout.
+//  - SIX grades: Sunset, Neon night, Golden hour, Tropic teal, Heatwave,
+//    Ultraviolet. ('vice' is kept as an alias of Ultraviolet for old URLs.)
+//  - A tagline line under the script in the title band (empty on V1, so
+//    V1 renders exactly as r10), a Glow slider for the title glow, a
+//    Halftone amount slider, and per-panel Flip (drawPanelPhoto mirrors
+//    the photo when slot.flip is set).
 //  - Stars discipline, every variant: the HEAT pill reads ★★★★☆ (four
 //    filled, one empty) and the quote strip keeps its five small stars.
-//    The big wanted-stars pill is still OFF by default (wantedStars 0);
-//    only a shot URL that explicitly passes &stars= turns it back on.
+//    The big wanted-stars pill is OFF by default on every variant.
 
 export const SIZES = {
   square: { w: 1080, h: 1080, label: '1080 × 1080 (post)' },
@@ -48,17 +46,25 @@ export const SIZES = {
 
 export const LAYOUTS = {
   sunset: { label: 'Sunset Chase', panels: 5, hint: 'Hero chase wide top-left, driver top-right, fixer / getaway / wildcard below' },
-  neon: { label: 'Neon Nights', panels: 5, hint: 'Strip, charmer and rooftop on top; boulevard wide + classic muscle below' },
-  coast: { label: 'Golden Coast', panels: 5, hint: 'Coast, beach and lookout on top; classic wide + sunset racer below' },
-  throttle: { label: 'Full Throttle', panels: 5, hint: 'Duo + rider wide on top; mechanic, harbour and desert below' },
+  crime: { label: 'Diagonal trio', panels: 3, hint: 'Three diagonal panels — insider, lookout, getaway' },
+  dark: { label: 'Hero + three', panels: 4, hint: 'Blue coupe hero on top, market / truck / helicopter below' },
+  runners: { label: 'Six grid', panels: 6, hint: 'Two rows of three — pickup, diner, bike, skater, boat, skyline' },
+  'hero-mosaic': { label: 'Hero mosaic', panels: 6, hint: 'One big hero panel left, five small panels stacked right' },
+  'hero-three': { label: 'Hero + three', panels: 4, hint: 'One big hero panel on top, three small panels below' },
+  sixgrid: { label: 'Six grid', panels: 6, hint: 'Two rows of three equal panels' },
+  diagonal: { label: 'Diagonal trio', panels: 3, hint: 'Three diagonal panels leaning across the frame' },
+  seven: { label: 'Seven mosaic', panels: 7, hint: 'One wide hero on top, six small panels below in two rows' },
   five: { label: 'Five panel', panels: 5, hint: '1 hero panel + 4 small below' },
   hero: { label: 'Hero + strip', panels: 4, hint: '1 big panel + 3 small below' },
 };
 
 export const GRADES = {
-  golden: { label: 'Golden Hour', hint: 'warm amber / gold glow' },
-  neon: { label: 'Neon', hint: 'magenta / cyan duotone' },
-  vice: { label: 'Vice Night', hint: 'purple / blue night' },
+  sunset: { label: 'Sunset', hint: 'warm pink-orange dusk' },
+  neon: { label: 'Neon night', hint: 'magenta / cyan duotone' },
+  golden: { label: 'Golden hour', hint: 'warm amber / gold glow' },
+  tropic: { label: 'Tropic teal', hint: 'teal sea / green palm' },
+  heatwave: { label: 'Heatwave', hint: 'hot orange-red blaze' },
+  ultraviolet: { label: 'Ultraviolet', hint: 'violet / purple night' },
 };
 
 export const CAPTION_COLORS = {
@@ -79,37 +85,45 @@ export const CAPTION_FONT = '"Bebas Neue", "Anton", "Archivo Black", sans-serif'
 export const SUB_FONT = '"Anton", "Archivo Black", sans-serif';
 export const BODY_FONT = '"Archivo Black", "Anton", sans-serif';
 
-/** The four variants, in showcase order. Each lists its five scene keys in
- *  panel order (panel 1 is the lead photo), its grade and its strip line.
- *  main.js holds the matching photo catalogue. */
+/** The four variants, in showcase order. V1 is r10's Sunset Chase,
+ *  untouched. Each new variant lists its own title, script, tagline,
+ *  quote, strip line, grade, layout and photo keys in panel order. */
 export const VARIANTS = {
   sunset: {
-    label: 'Sunset Chase', grade: 'golden',
+    label: 'Sunset Chase', layout: 'sunset', grade: 'golden',
+    title: 'VICE PURSUIT', script: 'Coastline Nights', tagline: '',
+    quote: 'HOTTER THAN THE ASPHALT', quoteSource: 'THE PALM GAZETTE',
     panels: ['chase', 'driver-new', 'rain', 'canyon', 'everglades'],
     strip: 'ONE COASTLINE · FIVE STORIES · NO CURFEW',
   },
-  neon: {
-    label: 'Neon Nights', grade: 'neon',
-    panels: ['strip', 'driver2', 'rooftop', 'palm-night', 'classic-muscle'],
-    strip: 'ONE CITY · FIVE STORIES · LIGHTS NEVER OFF',
+  crime: {
+    label: 'City of Crime', layout: 'diagonal', grade: 'neon',
+    title: 'CITY OF CRIME', script: 'Streets never sleep', tagline: 'THREE FACES · ONE LONG NIGHT',
+    quote: 'THE CITY NEVER BLINKS', quoteSource: 'THE NIGHT GAZETTE',
+    panels: ['crime-insider', 'crime-lookout', 'crime-tunnel'],
+    strip: 'THREE FACES · THREE STORIES · NO WAY OUT',
   },
-  coast: {
-    label: 'Golden Coast', grade: 'golden',
-    panels: ['coast', 'beach', 'pier', 'vintage-caddy', 'modern-sunset'],
-    strip: 'ONE COASTLINE · FIVE STORIES · SALT IN THE AIR',
+  dark: {
+    label: 'After Dark', layout: 'hero-three', grade: 'ultraviolet',
+    title: 'AFTER DARK', script: 'City of lights', tagline: 'FOUR NIGHTS · ONE CITY',
+    quote: 'BRIGHTER AFTER MIDNIGHT', quoteSource: 'THE PALM GAZETTE',
+    panels: ['dark-bluecoupe', 'dark-nightmarket', 'dark-truckwoman', 'dark-helicopter'],
+    strip: 'ONE CITY · FOUR STORIES · LIGHTS NEVER OFF',
   },
-  throttle: {
-    label: 'Full Throttle', grade: 'vice',
-    panels: ['sunset-duo', 'biker', 'garage', 'harbor', 'desert'],
-    strip: 'ONE COASTLINE · FIVE STORIES · FULL THROTTLE',
+  runners: {
+    label: 'Midnight Runners', layout: 'sixgrid', grade: 'sunset',
+    title: 'MIDNIGHT RUNNERS', script: 'Run the night', tagline: 'SIX ROADS · ONE CREW',
+    quote: 'NO BRAKES PAST MIDNIGHT', quoteSource: 'THE COAST GAZETTE',
+    panels: ['runners-pickup', 'runners-diner', 'runners-motelbike', 'runners-skatewoman', 'runners-speedboat', 'runners-skyline'],
+    strip: 'SIX ROADS · SIX STORIES · NO BRAKES',
   },
 };
 
-export const VARIANT_ORDER = ['sunset', 'neon', 'coast', 'throttle'];
+export const VARIANT_ORDER = ['sunset', 'crime', 'dark', 'runners'];
 
-/** A fresh default state: Sunset Chase, Golden Hour, the five chase photos,
- *  VICE PURSUIT headline, all magazine furniture switched on — except the
- *  big wanted-stars pill, which is off by default in r10 as in r9 (it does
+/** A fresh default state: V1 Sunset Chase, Golden Hour, the five chase
+ *  photos, VICE PURSUIT headline, all magazine furniture switched on —
+ *  except the big wanted-stars pill, which is off by default (it does
  *  not exist in SUNSET SYNDICATE either). */
 export function defaultState() {
   return {
@@ -122,9 +136,12 @@ export function defaultState() {
     grainAmount: 0.5,
     vignette: true,
     halftone: false,
+    halftoneAmount: 0.2,
+    glow: 0.5,
     size: 'landscape',
     caption: 'VICE PURSUIT',
     subcaption: 'Coastline Nights',
+    tagline: '',
     captionColor: 'gradient',
     titleStyle: 'gradient',
     captionPosition: 'bottom',
@@ -146,28 +163,39 @@ export function defaultState() {
     // Stickers placed on the cover: { type, x, y, scale } in fractions of W/H.
     stickers: [],
     // One slot per panel of the current layout; a slot holds
-    // { img, zoom, ox, oy, fit } or null when the panel is empty.
+    // { img, zoom, ox, oy, fit, flip } or null when the panel is empty.
     panels: [null, null, null, null, null],
   };
 }
 
-/** True for the four r10 variant grids (collage + title band). */
+/** True for the four variant grids (collage + title band). */
 export function isVariant(layout) {
-  return layout === 'sunset' || layout === 'neon' || layout === 'coast' || layout === 'throttle';
+  return layout === 'sunset' || layout === 'crime' || layout === 'dark' || layout === 'runners';
 }
 
-/** The title band between the two panel rows, for a variant layout at W × H.
- *  Returns { x, y, w, h } — the dark strip the headline lives in. The band
- *  is a real gap in the grid: no photo is ever drawn under it, so the title
- *  can be giant without covering a single car, bike or face. */
-export function titleBandRect(layout, W, H) {
-  if (!isVariant(layout)) return null;
+/** Shared frame geometry: gap, cream strip, body, title band height,
+ *  and the panel region height (the panels live above the band). For the
+ *  r10 Sunset Chase grid the band sits BETWEEN the two panel rows, so
+ *  its band Y is rowH + g — exactly the r10 formula, kept verbatim. */
+function geometry(W, H) {
   const g = Math.max(4, Math.round(W * 0.008));
   const stripH = Math.round(H * 0.085);
   const bodyH = H - stripH - g;
   const bandH = Math.round(H * 0.235);
+  const regionH = bodyH - bandH - g;
   const rowH = (bodyH - bandH - g) / 2;
-  return { x: 0, y: rowH + g, w: W, h: bandH };
+  return { g, stripH, bodyH, bandH, regionH, rowH };
+}
+
+/** The title band between the panels and the bottom strip, for a layout
+ *  at W × H. Returns { x, y, w, h } — the dark strip the headline lives
+ *  in. The band is a real gap in the grid: no photo is ever drawn under
+ *  it, so the title can be giant without covering a single car, bike or
+ *  face. */
+export function titleBandRect(layout, W, H) {
+  const { bandH, rowH, g, bodyH } = geometry(W, H);
+  if (layout === 'sunset') return { x: 0, y: rowH + g, w: W, h: bandH };
+  return { x: 0, y: bodyH - bandH, w: W, h: bandH };
 }
 
 /** Panel rectangles + polygons (pixel coords) for a layout at W × H. */
@@ -176,72 +204,106 @@ export function layoutPanels(layout, W, H) {
     x, y, w, h,
     poly: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]],
   });
-  const g = Math.max(4, Math.round(W * 0.008));
+  const { g, regionH, rowH } = geometry(W, H);
+  const colW = (W - 2 * g) / 3;
+  const x1 = colW + g;
+  const x2 = 2 * (colW + g);
+  const wide2 = 2 * colW + g;
+  const halfH = (regionH - g) / 2;
+  const heroH = Math.round(regionH * 0.58);
+  const smallH = regionH - heroH - g;
+
+  if (layout === 'sunset') {
+    // r10 geometry, verbatim: hero wide top-left, driver top-right,
+    // three equal panels below the title band.
+    const bandY = rowH + g;
+    const botY = bandY + Math.round(H * 0.235) + g;
+    const bot3 = [rect(0, botY, colW, rowH), rect(x1, botY, colW, rowH), rect(x2, botY, colW, rowH)];
+    return [rect(0, 0, wide2, rowH), rect(x2, 0, colW, rowH), ...bot3];
+  }
+  if (layout === 'crime' || layout === 'diagonal') {
+    // Diagonal trio: three parallelograms leaning across the frame.
+    // The dividers are slanted lines; the panels still cover the whole
+    // region edge to edge, so no background shows through the corners.
+    const slant = Math.round(regionH * 0.16);
+    const b = [0, Math.round(W / 3), Math.round((2 * W) / 3), W];
+    const mk = (i) => {
+      const tl = i === 0 ? [0, 0] : [b[i] + slant, 0];
+      const tr = i === 2 ? [W, 0] : [b[i + 1] + slant, 0];
+      const br = i === 2 ? [W, regionH] : [b[i + 1], regionH];
+      const bl = i === 0 ? [0, regionH] : [b[i], regionH];
+      return { x: b[i], y: 0, w: b[i + 1] - b[i], h: regionH, poly: [tl, tr, br, bl] };
+    };
+    return [mk(0), mk(1), mk(2)];
+  }
+  if (layout === 'dark' || layout === 'hero-three' || layout === 'hero') {
+    // Hero + three: one wide hero on top, three equal panels below.
+    const sw = (W - 2 * g) / 3;
+    const y2 = heroH + g;
+    return [
+      rect(0, 0, W, heroH),
+      rect(0, y2, sw, smallH),
+      rect(sw + g, y2, sw, smallH),
+      rect(2 * (sw + g), y2, sw, smallH),
+    ];
+  }
+  if (layout === 'runners' || layout === 'sixgrid') {
+    // Six grid: two rows of three equal panels.
+    const y2 = halfH + g;
+    return [
+      rect(0, 0, colW, halfH), rect(x1, 0, colW, halfH), rect(x2, 0, colW, halfH),
+      rect(0, y2, colW, halfH), rect(x1, y2, colW, halfH), rect(x2, y2, colW, halfH),
+    ];
+  }
+  if (layout === 'hero-mosaic') {
+    // Hero mosaic: one big hero left, five small panels stacked right.
+    const heroW = Math.round(W * 0.54);
+    const rightX = heroW + g;
+    const rightW = W - rightX;
+    const rh = (regionH - 4 * g) / 5;
+    return [
+      rect(0, 0, heroW, regionH),
+      rect(rightX, 0, rightW, rh),
+      rect(rightX, rh + g, rightW, rh),
+      rect(rightX, 2 * (rh + g), rightW, rh),
+      rect(rightX, 3 * (rh + g), rightW, rh),
+      rect(rightX, 4 * (rh + g), rightW, rh),
+    ];
+  }
+  if (layout === 'seven') {
+    // Seven mosaic: one wide hero on top, six small panels below.
+    const hero7 = Math.round(regionH * 0.42);
+    const rest = regionH - hero7 - g;
+    const rH = (rest - g) / 2;
+    const y2 = hero7 + g;
+    const y3 = y2 + rH + g;
+    return [
+      rect(0, 0, W, hero7),
+      rect(0, y2, colW, rH), rect(x1, y2, colW, rH), rect(x2, y2, colW, rH),
+      rect(0, y3, colW, rH), rect(x1, y3, colW, rH), rect(x2, y3, colW, rH),
+    ];
+  }
   if (layout === 'five') {
-    const topH = Math.round(H * 0.60);
+    // Legacy five panel: hero top, four small below.
+    const topH = Math.round(regionH * 0.60);
     const stripY = topH + g;
-    const stripH = H - stripY;
+    const stripH2 = regionH - stripY;
     const sw = (W - 3 * g) / 4;
     return [
       rect(0, 0, W, topH),
-      rect(0, stripY, sw, stripH),
-      rect(sw + g, stripY, sw, stripH),
-      rect(2 * (sw + g), stripY, sw, stripH),
-      rect(3 * (sw + g), stripY, sw, stripH),
+      rect(0, stripY, sw, stripH2),
+      rect(sw + g, stripY, sw, stripH2),
+      rect(2 * (sw + g), stripY, sw, stripH2),
+      rect(3 * (sw + g), stripY, sw, stripH2),
     ];
   }
-  if (layout === 'hero') {
-    const topH = Math.round(H * 0.62);
-    const stripY = topH + g;
-    const stripH = H - stripY;
-    const sw = (W - 2 * g) / 3;
-    return [
-      rect(0, 0, W, topH),
-      rect(0, stripY, sw, stripH),
-      rect(sw + g, stripY, sw, stripH),
-      rect(2 * (sw + g), stripY, sw, stripH),
-    ];
-  }
-  if (isVariant(layout)) {
-    // Four r10 variants, one shared 3-unit grid: two panel rows with the
-    // title band between them, and a cream billing strip along the bottom.
-    // Each variant splits its rows differently, so no two covers share a
-    // silhouette: sunset = hero wide top-left; neon = wide panel
-    // bottom-left; coast = wide panel bottom-right; throttle = hero wide
-    // top-right. Every variant is five photographs, five stories.
-    const stripH = Math.round(H * 0.085);
-    const bodyH = H - stripH - g;
-    const bandH = Math.round(H * 0.235);
-    const rowH = (bodyH - bandH - g) / 2;
-    const bandY = rowH + g;
-    const botY = bandY + bandH + g;
-    const colW = (W - 2 * g) / 3;
-    const x1 = colW + g;
-    const x2 = 2 * (colW + g);
-    const wide2 = 2 * colW + g;
-    const top3 = [rect(0, 0, colW, rowH), rect(x1, 0, colW, rowH), rect(x2, 0, colW, rowH)];
-    const bot3 = [rect(0, botY, colW, rowH), rect(x1, botY, colW, rowH), rect(x2, botY, colW, rowH)];
-    if (layout === 'sunset') {
-      return [rect(0, 0, wide2, rowH), rect(x2, 0, colW, rowH), ...bot3];
-    }
-    if (layout === 'neon') {
-      return [...top3, rect(0, botY, wide2, rowH), rect(x2, botY, colW, rowH)];
-    }
-    if (layout === 'coast') {
-      return [...top3, rect(0, botY, colW, rowH), rect(x1, botY, wide2, rowH)];
-    }
-    // throttle: hero wide top-right, three equal below.
-    return [rect(0, 0, colW, rowH), rect(x1, 0, wide2, rowH), ...bot3];
-  }
-  // Fallback: the old magazine grid (hero left, five stacked right).
-  const stripH = Math.round(H * 0.085);
-  const bodyH = H - stripH - g;
+  // Fallback: the hero-mosaic grid.
   const heroW = Math.round(W * 0.54);
   const rightX = heroW + g;
   const rightW = W - rightX;
-  const rh = (bodyH - 4 * g) / 5;
+  const rh = (regionH - 4 * g) / 5;
   return [
-    rect(0, 0, heroW, bodyH),
+    rect(0, 0, heroW, regionH),
     rect(rightX, 0, rightW, rh),
     rect(rightX, rh + g, rightW, rh),
     rect(rightX, 2 * (rh + g), rightW, rh),
@@ -250,67 +312,28 @@ export function layoutPanels(layout, W, H) {
   ];
 }
 
-/** The neon divider strokes for a layout: pairs of points, pixel coords. */
+/** The neon divider strokes for a layout: pairs of points, pixel coords.
+ *  Derived from the panels themselves, so a wide panel never gets a seam
+ *  cut through its middle: a vertical seam only where a panel actually
+ *  starts right of the frame edge, a horizontal seam only where the row
+ *  above is a real panel row (never across the title band). */
 export function layoutDividers(layout, W, H) {
-  const g = Math.max(4, Math.round(W * 0.008));
-  if (layout === 'five') {
-    const topH = Math.round(H * 0.60);
-    const stripY = topH + g;
-    const sw = (W - 3 * g) / 4;
+  const { g, regionH } = geometry(W, H);
+  if (layout === 'crime' || layout === 'diagonal') {
+    const slant = Math.round(regionH * 0.16);
     return [
-      [[0, topH + g / 2], [W, topH + g / 2]],
-      [[sw + g / 2, stripY], [sw + g / 2, H]],
-      [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
-      [[3 * sw + 2.5 * g, stripY], [3 * sw + 2.5 * g, H]],
+      [[Math.round(W / 3) + slant, 0], [Math.round(W / 3), regionH]],
+      [[Math.round((2 * W) / 3) + slant, 0], [Math.round((2 * W) / 3), regionH]],
     ];
   }
-  if (layout === 'hero') {
-    const topH = Math.round(H * 0.62);
-    const stripY = topH + g;
-    const sw = (W - 2 * g) / 3;
-    return [
-      [[0, topH + g / 2], [W, topH + g / 2]],
-      [[sw + g / 2, stripY], [sw + g / 2, H]],
-      [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
-    ];
-  }
-  if (isVariant(layout)) {
-    // Variant grids: a neon line only where two panels actually meet.
-    // A wide panel spans two unit columns, so the seam inside it is NOT
-    // a boundary — drawing one there would cut straight through a photo
-    // (r10 first pass did exactly that on the wide chase / rider / racer
-    // panels). Derive the seams from the panels themselves: group by row,
-    // and every panel that starts right of the frame edge contributes one
-    // seam at its left edge, running that row's full height.
-    const band = titleBandRect(layout, W, H);
-    const panels = layoutPanels(layout, W, H);
-    const divs = [];
-    const rows = {};
-    for (const p of panels) {
-      (rows[p.y] ||= []).push(p);
+  const panels = layoutPanels(layout, W, H);
+  const divs = [];
+  for (const p of panels) {
+    if (p.x > 0) divs.push([[p.x - g / 2, p.y], [p.x - g / 2, p.y + p.h]]);
+    if (p.y > 0 && panels.some((q) => Math.abs((q.y + q.h) - (p.y - g)) < 2)) {
+      divs.push([[p.x, p.y - g / 2], [p.x + p.w, p.y - g / 2]]);
     }
-    for (const y of Object.keys(rows)) {
-      const row = rows[y];
-      const rowH = row[0].h;
-      for (const p of row) {
-        if (p.x <= 0) continue;
-        const sx = p.x - g / 2;
-        divs.push([[sx, Number(y)], [sx, Number(y) + rowH]]);
-      }
-    }
-    return divs;
   }
-  const stripH = Math.round(H * 0.085);
-  const bodyH = H - stripH - g;
-  const heroW = Math.round(W * 0.54);
-  const rightX = heroW + g;
-  const rh = (bodyH - 4 * g) / 5;
-  const divs = [[[heroW + g / 2, 0], [heroW + g / 2, bodyH]]];
-  for (let i = 1; i <= 4; i++) {
-    const y = i * rh + (i - 0.5) * g;
-    divs.push([[rightX, y], [W, y]]);
-  }
-  divs.push([[0, bodyH + g / 2], [W, bodyH + g / 2]]);
   return divs;
 }
 
@@ -391,7 +414,8 @@ export function noiseTile() {
 
 // ---------------------------------------------------------------- drawing
 
-/** Draw one panel's photo, cover-fit with the panel's zoom and pan offsets. */
+/** Draw one panel's photo, cover-fit with the panel's zoom and pan offsets.
+ *  slot.flip mirrors the photo horizontally (the Flip panel control). */
 function drawPanelPhoto(ctx, panel, slot) {
   const img = slot.img;
   const iw = img.naturalWidth || img.width;
@@ -415,7 +439,8 @@ function drawPanelPhoto(ctx, panel, slot) {
   const oy = Math.max(-maxOy, Math.min(maxOy, slot.oy || 0));
   const dx = x + (w - dw) / 2 + ox * w;
   const dy = y + (h - dh) / 2 + oy * h;
-  ctx.drawImage(img, dx, dy, dw, dh);
+  if (slot.flip) ctx.drawImage(img, dx + dw, dy, -dw, dh);
+  else ctx.drawImage(img, dx, dy, dw, dh);
 }
 
 /** Empty-panel placeholder: dusk gradient + a drop hint. */
@@ -437,7 +462,10 @@ function photoFilter(grade, contrast, saturation) {
   const c = (contrast || 1).toFixed(2);
   const s = (saturation || 1).toFixed(2);
   if (grade === 'neon') return `saturate(${(s * 1.3).toFixed(2)}) contrast(${(c * 1.08).toFixed(2)}) brightness(1.03)`;
-  if (grade === 'vice') return `saturate(${(s * 0.85).toFixed(2)}) contrast(${c}) hue-rotate(-14deg) brightness(0.97)`;
+  if (grade === 'ultraviolet' || grade === 'vice') return `saturate(${(s * 0.9).toFixed(2)}) contrast(${c}) hue-rotate(-18deg) brightness(0.97)`;
+  if (grade === 'sunset') return `saturate(${(s * 1.2).toFixed(2)}) contrast(${c}) sepia(0.18) hue-rotate(-8deg) brightness(1.05)`;
+  if (grade === 'tropic') return `saturate(${(s * 1.25).toFixed(2)}) contrast(${c}) hue-rotate(14deg) brightness(1.04)`;
+  if (grade === 'heatwave') return `saturate(${(s * 1.45).toFixed(2)}) contrast(${(c * 1.1).toFixed(2)}) sepia(0.35) brightness(1.05)`;
   return `saturate(${(s * 1.15).toFixed(2)}) contrast(${c}) sepia(0.28) brightness(1.06)`;
 }
 
@@ -447,7 +475,10 @@ function gradeWash(ctx, grade, strength, W, H) {
   const a = strength;
   let stops;
   if (grade === 'neon') stops = ['rgba(255,0,140,0.34)', 'rgba(150,40,255,0.22)', 'rgba(0,220,255,0.34)'];
-  else if (grade === 'vice') stops = ['rgba(90,40,180,0.34)', 'rgba(40,60,200,0.20)', 'rgba(10,40,120,0.38)'];
+  else if (grade === 'ultraviolet' || grade === 'vice') stops = ['rgba(150,60,255,0.36)', 'rgba(90,40,200,0.22)', 'rgba(30,20,120,0.40)'];
+  else if (grade === 'sunset') stops = ['rgba(255,120,60,0.36)', 'rgba(255,80,140,0.24)', 'rgba(120,40,120,0.32)'];
+  else if (grade === 'tropic') stops = ['rgba(0,220,190,0.30)', 'rgba(0,160,140,0.20)', 'rgba(0,90,120,0.34)'];
+  else if (grade === 'heatwave') stops = ['rgba(255,90,20,0.38)', 'rgba(255,140,0,0.26)', 'rgba(180,30,0,0.32)'];
   else stops = ['rgba(255,190,60,0.36)', 'rgba(255,150,30,0.24)', 'rgba(180,90,10,0.30)'];
   const scaled = stops.map((st) => {
     const m = st.match(/([\d.]+)\)$/);
@@ -480,9 +511,9 @@ function starPath(ctx, cx, cy, r) {
 
 /** GTA wanted-level HUD: N solid gold stars on a dark pill. Drawn as crisp
  *  vector shapes (never part of a photo) so the stars stay countable at any
- *  export size. r10: every variant defaults to 0, so the main covers never
- *  draw this — the big pill does not exist in SUNSET SYNDICATE. Only a
- *  shot URL that explicitly passes &stars= turns it back on. */
+ *  export size. Every variant defaults to 0, so the main covers never
+ *  draw this — the big pill does not exist in SUNREEL. Only a shot URL
+ *  that explicitly passes &stars= turns it back on. */
 export function drawWantedStars(ctx, W, H, count, rightX) {
   const n = Math.max(0, Math.min(5, Math.round(count || 0)));
   if (n === 0) return;
@@ -545,41 +576,11 @@ function tagPill(ctx, text, x, y, H, align = 'left') {
   return bx + tw + padX * 2;
 }
 
-/** Location + time label: dark pill, white place, gold time. Legacy
- *  layouts only — the variant grids use the yellow role pill alone,
- *  exactly like the reference. */
-function placeLabel(ctx, place, time, x, y, H, align = 'right') {
-  const fs = Math.max(12, Math.round(H * 0.026));
-  ctx.font = `${fs}px ${BODY_FONT}`;
-  const label = `${place} · ${time}`;
-  const padX = Math.round(fs * 0.8);
-  const padY = Math.round(fs * 0.5);
-  const tw = ctx.measureText(label).width;
-  const bx = align === 'right' ? x - tw - padX * 2 : x;
-  ctx.save();
-  ctx.fillStyle = 'rgba(8,6,16,0.78)';
-  ctx.strokeStyle = 'rgba(255,201,60,0.9)';
-  ctx.lineWidth = Math.max(1, Math.round(fs * 0.08));
-  ctx.beginPath();
-  ctx.roundRect(bx, y, tw + padX * 2, fs + padY * 2, Math.round(fs * 0.3));
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(place, bx + padX, y + (fs + padY * 2) / 2 + 1);
-  const pw = ctx.measureText(place).width;
-  ctx.fillStyle = '#ffc93c';
-  ctx.fillText(` · ${time}`, bx + padX + pw, y + (fs + padY * 2) / 2 + 1);
-  ctx.restore();
-}
-
 /** HEAT ★★★★☆ badge, exactly like HEATWAVE: dark pill, gold HEAT, four
  *  FILLED gold stars and one EMPTY star — a gold outline over the dark
- *  pill, no gold fill. In r10 it lives inside the title band at the left
- *  end, so it never covers a photo. Stars exist in exactly two small
- *  places on the cover: this pill and the five small stars of the quote
- *  strip. */
+ *  pill, no gold fill. It lives inside the title band at the left end, so
+ *  it never covers a photo. Stars exist in exactly two small places on
+ *  the cover: this pill and the five small stars of the quote strip. */
 function heatBadge(ctx, x, y, H) {
   const fs = Math.max(13, Math.round(H * 0.028));
   ctx.save();
@@ -621,39 +622,6 @@ function heatBadge(ctx, x, y, H) {
   ctx.restore();
 }
 
-/** HOT seal: a gold starburst disc with HOT in the middle. Legacy layouts
- *  only — the variant grids use the CERTIFIED NO.1 seal in the title band. */
-function hotSeal(ctx, cx, cy, r) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.beginPath();
-  const spikes = 14;
-  for (let i = 0; i < spikes * 2; i++) {
-    const rr = i % 2 === 0 ? r : r * 0.82;
-    const a = (i * Math.PI) / spikes - Math.PI / 2;
-    const px = rr * Math.cos(a);
-    const py = rr * Math.sin(a);
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fillStyle = '#ffc93c';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(10,4,20,0.9)';
-  ctx.lineWidth = Math.max(2, Math.round(r * 0.06));
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.68, 0, Math.PI * 2);
-  ctx.fillStyle = '#ff2e5e';
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `${Math.round(r * 0.52)}px ${BODY_FONT}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('HOT', 0, 1);
-  ctx.restore();
-}
-
 /** Gold CERTIFIED NO.1 round seal, reference style: a serrated gold disc,
  *  a thin inner ring, CERTIFIED on top, a star, NO.1 below. Drawn inside
  *  the title band at the right end — it never touches a photo. */
@@ -688,9 +656,6 @@ function certifiedSeal(ctx, cx, cy, r) {
   ctx.fillStyle = '#14061f';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // CERTIFIED is nine wide caps: keep it small enough to sit inside the
-  // inner ring (r*0.30 overflowed the disc on every variant in r10's
-  // first screenshots).
   ctx.font = `${Math.round(r * 0.20)}px ${BODY_FONT}`;
   ctx.fillText('CERTIFIED', 0, -Math.round(r * 0.38));
   starPath(ctx, 0, 0, Math.round(r * 0.24));
@@ -746,12 +711,13 @@ function barcode(ctx, x, y, w, h) {
 }
 
 /** The title band: dark gradient, gold rules top and bottom, the giant
- *  VICE PURSUIT headline, the pink script subtitle, the HEAT ★★★★☆ pill
- *  at the left end and the gold CERTIFIED NO.1 seal at the right end.
- *  Everything in this function draws INSIDE the band rect — it never
- *  touches a photo, so the title can be as giant as it wants. The headline
- *  auto-fits both the band height and the free width between the pill and
- *  the seal. */
+ *  headline, the pink script subtitle, the tagline line under it, the
+ *  HEAT ★★★★☆ pill at the left end and the gold CERTIFIED NO.1 seal at
+ *  the right end. Everything in this function draws INSIDE the band
+ *  rect — it never touches a photo, so the title can be as giant as it
+ *  wants. V1's tagline is empty, so V1 renders exactly as r10. The
+ *  headline auto-fits both the band height and the free width between
+ *  the pill and the seal. */
 function drawTitleBand(ctx, state, W, H, band) {
   const { x, y, w, h } = band;
   ctx.save();
@@ -769,8 +735,9 @@ function drawTitleBand(ctx, state, W, H, band) {
 
   const text = (state.caption || '').trim().toUpperCase();
   const color = (CAPTION_COLORS[state.captionColor] || CAPTION_COLORS.gradient).value;
+  const glow = 0.5 + (state.glow ?? 0.5);
   // The seal takes the right end, the HEAT pill the left: the headline
-  // gets the middle ~62% of the width, at most ~72% of the band height.
+  // gets the middle ~62% of the width, at most ~66% of the band height.
   const sealR = Math.round(h * 0.40);
   const sealCX = x + w - Math.round(W * 0.035) - sealR;
   const sealCY = y + h / 2;
@@ -790,8 +757,10 @@ function drawTitleBand(ctx, state, W, H, band) {
   ctx.font = `${size}px ${CAPTION_FONT}`;
   const sub = (state.subcaption || '').trim();
   const subSize = Math.max(16, Math.round(size * 0.30));
-  // Headline baseline: leave the script room underneath, inside the band.
-  const blockH = size + (sub ? Math.round(subSize * 1.15) : 0);
+  const tag = (state.tagline || '').trim();
+  const tagSize = Math.max(12, Math.round(size * 0.17));
+  // Headline block: title + script + (tagline) — all inside the band.
+  const blockH = size + (sub ? Math.round(subSize * 1.15) : 0) + (tag ? Math.round(tagSize * 1.6) : 0);
   const baseY = y + (h - blockH) / 2 + size * 0.92;
   const cx = (pillRight + (sealCX - sealR)) / 2;
   ctx.save();
@@ -804,7 +773,7 @@ function drawTitleBand(ctx, state, W, H, band) {
     ctx.strokeStyle = color === 'gradient' ? '#ffc93c' : color;
     ctx.lineWidth = Math.max(2, Math.round(size * 0.03));
     ctx.shadowColor = color === 'gradient' ? '#ff2e88' : color;
-    ctx.shadowBlur = Math.round(size * 0.22);
+    ctx.shadowBlur = Math.round(size * 0.22 * glow);
     ctx.strokeText(text, cx, baseY);
   } else if (color === 'gradient') {
     const grad = ctx.createLinearGradient(0, baseY - size, 0, baseY + size * 0.12);
@@ -813,14 +782,14 @@ function drawTitleBand(ctx, state, W, H, band) {
     grad.addColorStop(0.65, '#ff5e78');
     grad.addColorStop(1, '#c93bff');
     ctx.shadowColor = '#ff2e88';
-    ctx.shadowBlur = Math.round(size * 0.20);
+    ctx.shadowBlur = Math.round(size * 0.20 * glow);
     ctx.fillStyle = grad;
     ctx.fillText(text, cx, baseY);
     ctx.shadowBlur = 0;
     ctx.fillText(text, cx, baseY);
   } else {
     ctx.shadowColor = color;
-    ctx.shadowBlur = Math.round(size * 0.24);
+    ctx.shadowBlur = Math.round(size * 0.24 * glow);
     ctx.fillStyle = color;
     ctx.fillText(text, cx, baseY);
     ctx.shadowBlur = 0;
@@ -840,11 +809,19 @@ function drawTitleBand(ctx, state, W, H, band) {
     ctx.strokeText(sub, 0, 0);
     ctx.fillStyle = '#ff7ab8';
     ctx.shadowColor = '#ff2e88';
-    ctx.shadowBlur = Math.round(subSize * 0.35);
+    ctx.shadowBlur = Math.round(subSize * 0.35 * glow);
     ctx.fillText(sub, 0, 0);
     ctx.shadowBlur = 0;
     ctx.fillText(sub, 0, 0);
     ctx.restore();
+  }
+  if (tag) {
+    // Tagline: small gold caps, centred under the script.
+    const tagY = baseY + Math.round(subSize * 1.15) + Math.round(tagSize * 1.35);
+    ctx.font = `${tagSize}px ${BODY_FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffc93c';
+    ctx.fillText(tag.toUpperCase(), cx, tagY);
   }
   ctx.restore();
 
@@ -853,87 +830,6 @@ function drawTitleBand(ctx, state, W, H, band) {
     heatBadge(ctx, Math.round(W * 0.02) + Math.round(H * 0.30), y + h / 2 - Math.round(H * 0.028), H);
   }
   if (state.hotSeal) certifiedSeal(ctx, sealCX, sealCY, sealR);
-  ctx.restore();
-}
-
-/** Legacy headline for the five / hero layouts: the giant title across the
- *  lower hero, as in r9. Variant layouts never call this — their title
- *  lives in the band. */
-function drawHeadline(ctx, state, W, H, hero) {
-  const text = (state.caption || '').trim().toUpperCase();
-  if (!text) return;
-  const color = (CAPTION_COLORS[state.captionColor] || CAPTION_COLORS.gradient).value;
-  const maxW = W * 0.94;
-  let size = Math.round(H * 0.19);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  const fit = (s) => {
-    ctx.font = `${s}px ${CAPTION_FONT}`;
-    return ctx.measureText(text).width;
-  };
-  while (size > 24 && fit(size) > maxW) size = Math.round(size * 0.94);
-  ctx.font = `${size}px ${CAPTION_FONT}`;
-  const sub = (state.subcaption || '').trim();
-  const subSize = Math.max(18, Math.round(size * 0.30));
-  const gap = Math.round(size * 0.30);
-  const pad = Math.round(H * 0.05);
-  const top = state.captionPosition === 'top';
-  const heroBottom = hero ? hero.y + hero.h : H;
-  const blockBottom = top
-    ? pad + size + (sub ? gap + subSize : 0)
-    : Math.min(H - pad - Math.round(H * 0.045), heroBottom - Math.round(H * 0.02));
-  const baseY = top ? pad + size : blockBottom - (sub ? gap + subSize : 0);
-  const cx = W / 2;
-  ctx.save();
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.strokeStyle = 'rgba(10,4,20,0.92)';
-  ctx.lineWidth = Math.max(3, Math.round(size * 0.075));
-  ctx.strokeText(text, cx, baseY);
-  if (state.titleStyle === 'outline') {
-    ctx.strokeStyle = color === 'gradient' ? '#ffc93c' : color;
-    ctx.lineWidth = Math.max(2, Math.round(size * 0.03));
-    ctx.shadowColor = color === 'gradient' ? '#ff2e88' : color;
-    ctx.shadowBlur = Math.round(size * 0.22);
-    ctx.strokeText(text, cx, baseY);
-  } else if (color === 'gradient') {
-    const grad = ctx.createLinearGradient(0, baseY - size, 0, baseY + size * 0.12);
-    grad.addColorStop(0, '#fff3c4');
-    grad.addColorStop(0.35, '#ffb03a');
-    grad.addColorStop(0.65, '#ff5e78');
-    grad.addColorStop(1, '#c93bff');
-    ctx.shadowColor = '#ff2e88';
-    ctx.shadowBlur = Math.round(size * 0.20);
-    ctx.fillStyle = grad;
-    ctx.fillText(text, cx, baseY);
-    ctx.shadowBlur = 0;
-    ctx.fillText(text, cx, baseY);
-  } else {
-    ctx.shadowColor = color;
-    ctx.shadowBlur = Math.round(size * 0.24);
-    ctx.fillStyle = color;
-    ctx.fillText(text, cx, baseY);
-    ctx.shadowBlur = 0;
-    ctx.fillText(text, cx, baseY);
-  }
-  if (sub) {
-    const subY = baseY + gap + subSize;
-    ctx.save();
-    ctx.translate(cx, subY);
-    ctx.transform(1, 0, -0.22, 1, 0, 0);
-    ctx.font = `italic ${subSize}px ${SUB_FONT}`;
-    ctx.textAlign = 'center';
-    ctx.strokeStyle = 'rgba(10,4,20,0.9)';
-    ctx.lineWidth = Math.max(2, Math.round(subSize * 0.12));
-    ctx.strokeText(sub, 0, 0);
-    ctx.fillStyle = '#ff7ab8';
-    ctx.shadowColor = '#ff2e88';
-    ctx.shadowBlur = Math.round(subSize * 0.35);
-    ctx.fillText(sub, 0, 0);
-    ctx.shadowBlur = 0;
-    ctx.fillText(sub, 0, 0);
-    ctx.restore();
-  }
   ctx.restore();
 }
 
@@ -1071,10 +967,10 @@ function drawStickers(ctx, state, W, H) {
   }
 }
 
-/** Halftone dots over the whole frame, print-magazine feel. */
-function halftone(ctx, W, H) {
+/** Halftone dots over the whole frame, print-magazine feel. Amount 0–1. */
+function halftone(ctx, W, H, amount) {
   ctx.save();
-  ctx.globalAlpha = 0.10;
+  ctx.globalAlpha = 0.06 + 0.14 * (amount ?? 0.2);
   ctx.fillStyle = '#14061f';
   const step = Math.max(6, Math.round(W * 0.008));
   for (let y = step / 2; y < H; y += step) {
@@ -1088,71 +984,53 @@ function halftone(ctx, W, H) {
   ctx.restore();
 }
 
-// One row per panel: the yellow role pill's text. Five panels, five
-// different stories per variant — a different hero, mood, weather and
-// location in every panel, and different across the four variants. The
-// hero Lambo + Ducati chase leads Sunset Chase; Neon Nights pairs a
-// classic muscle car with the blonde charmer; Golden Coast pairs a
-// vintage Cadillac with a modern sunset racer; Full Throttle puts the
-// modern supercar and the classic muscle car side by side in one frame.
+// One row per panel: the yellow role pill's text. V1 keeps its r10 roles
+// exactly. The three new variants get their own roles; the editor-only
+// layouts fall back to the generic list by panel index.
 const PANEL_META = {
   sunset: [
-    { role: 'THE RIDE', place: 'CORAL CAUSEWAY', time: '7:15 PM' },
-    { role: 'THE DRIVER', place: 'OCEAN DRIVE', time: '6:40 PM' },
-    { role: 'THE FIXER', place: 'VICE PORT', time: '11:58 PM' },
-    { role: 'THE GETAWAY', place: 'RED ROCK PASS', time: '6:02 PM' },
-    { role: 'THE WILDCARD', place: 'GATOR FLATS', time: '5:31 PM' },
+    { role: 'THE RIDE' }, { role: 'THE DRIVER' }, { role: 'THE FIXER' },
+    { role: 'THE GETAWAY' }, { role: 'THE WILDCARD' },
   ],
-  neon: [
-    { role: 'THE STRIP', place: 'OCEAN DRIVE', time: '11:47 PM' },
-    { role: 'THE CHARMER', place: 'COLADA ROW', time: '10:15 PM' },
-    { role: 'THE ROOFTOP', place: 'SKYLINE HOTEL', time: '1:20 AM' },
-    { role: 'THE BOULEVARD', place: 'PALM ROW', time: '12:05 AM' },
-    { role: 'THE CLASSIC', place: 'VICE PORT', time: '9:40 PM' },
+  crime: [
+    { role: 'THE INSIDER' }, { role: 'THE LOOKOUT' }, { role: 'THE GETAWAY' },
   ],
-  coast: [
-    { role: 'THE COAST', place: 'SUNNY SHORES', time: '10:30 AM' },
-    { role: 'THE BEACH', place: 'PALM BEACH', time: '11:05 AM' },
-    { role: 'THE LOOKOUT', place: 'MISTY PIER', time: '6:12 AM' },
-    { role: 'THE CLASSIC', place: 'BAYSIDE', time: '4:45 PM' },
-    { role: 'THE RACER', place: 'COAST HIGHWAY', time: '5:50 PM' },
+  dark: [
+    { role: 'THE RIDE' }, { role: 'THE MARKET' }, { role: 'THE DRIVER' }, { role: 'THE SKY' },
   ],
-  throttle: [
-    { role: 'THE DUO', place: 'COAST HIGHWAY', time: '6:20 PM' },
-    { role: 'THE RIDER', place: 'SUNSET STRIP', time: '6:55 PM' },
-    { role: 'THE MECHANIC', place: 'BACKSTREET GARAGE', time: '8:10 PM' },
-    { role: 'THE HARBOR', place: 'VICE PORT', time: '7:30 PM' },
-    { role: 'THE DESERT', place: 'RED ROCK PASS', time: '12:40 PM' },
+  runners: [
+    { role: 'THE PICKUP' }, { role: 'THE DINER' }, { role: 'THE RIDER' },
+    { role: 'THE SKATER' }, { role: 'THE BOAT' }, { role: 'THE OVERLOOK' },
+  ],
+  // Layout keys share their variant's roles: the variant's layout IS the
+  // layout the cover uses, so the pills must read the variant's roles,
+  // not the generic list (r11 first pass showed THE HERO / THE CREW here).
+  diagonal: [
+    { role: 'THE INSIDER' }, { role: 'THE LOOKOUT' }, { role: 'THE GETAWAY' },
+  ],
+  'hero-three': [
+    { role: 'THE RIDE' }, { role: 'THE MARKET' }, { role: 'THE DRIVER' }, { role: 'THE SKY' },
+  ],
+  sixgrid: [
+    { role: 'THE PICKUP' }, { role: 'THE DINER' }, { role: 'THE RIDER' },
+    { role: 'THE SKATER' }, { role: 'THE BOAT' }, { role: 'THE OVERLOOK' },
   ],
 };
+const GENERIC_ROLES = ['THE HERO', 'THE CREW', 'THE RIDE', 'THE NIGHT', 'THE CITY', 'THE CHASE', 'THE DAWN'];
 
-/** Yellow role pills for each panel. Variant grids: the yellow pill alone,
- *  bottom-left, exactly like the reference. Legacy layouts keep the old
- *  white role tag + bottom location label. */
+/** Yellow role pills for each panel: bottom-left, exactly like the
+ *  reference. The pill is small and low: on the DRIVER panels it sits
+ *  over her jacket, never over her face. */
 function drawPanelFurniture(ctx, state, panels, W, H) {
   panels.forEach((panel, i) => {
     if (panel.w < W * 0.15 || panel.h < H * 0.12) return;
     const meta = (PANEL_META[state.layout] || [])[i];
-    if (!meta) return;
+    const role = meta ? meta.role : GENERIC_ROLES[i % GENERIC_ROLES.length];
     const pad = Math.max(6, Math.round(W * 0.008));
     if (state.roleTags) {
-      if (isVariant(state.layout)) {
-        // Yellow pill, bottom-left. The pill is small and low: on the
-        // DRIVER panels it sits over her jacket, never over her face.
-        const fs = Math.max(12, Math.round(H * 0.024));
-        const pillH = fs + Math.round(fs * 0.42) * 2;
-        tagPill(ctx, meta.role, panel.x + pad, panel.y + panel.h - pad - pillH, H, 'left');
-      } else {
-        tagPill(ctx, meta.role, panel.x + pad, panel.y + pad, H, 'left');
-      }
-    }
-    if (state.locationLabels && !isVariant(state.layout)) {
-      const shortHero = i === 0 && panel.h < H * 0.8 && state.captionPosition === 'bottom';
-      if (shortHero) return;
-      const labelY = i === 0
-        ? panel.y + Math.round(panel.h * 0.62)
-        : panel.y + panel.h - pad - Math.round(H * 0.045);
-      placeLabel(ctx, meta.place, meta.time, panel.x + panel.w - pad, labelY, H, 'right');
+      const fs = Math.max(12, Math.round(H * 0.024));
+      const pillH = fs + Math.round(fs * 0.42) * 2;
+      tagPill(ctx, role, panel.x + pad, panel.y + panel.h - pad - pillH, H, 'left');
     }
   });
 }
@@ -1161,10 +1039,11 @@ function drawPanelFurniture(ctx, state, panels, W, H) {
  * Paint the whole cover onto ctx at W × H. The preview and the export both
  * call this — the only difference is the canvas they hand in.
  *
- * Variant covers: five photos in two rows, the title band between them
- * (headline + script + HEAT pill + gold seal, all inside the band), the
- * COMING SOON badge at the top-left corner, and the cream strip at the
- * bottom. No title text ever touches a photo.
+ * Every cover: photos in their layout grid, the title band (headline +
+ * script + tagline + HEAT pill + gold seal, all inside the gap between
+ * the panels and the strip), the COMING SOON badge at the top-left
+ * corner, and the cream strip at the bottom. No title text ever touches
+ * a photo.
  */
 export function drawCover(ctx, state, W, H) {
   ctx.save();
@@ -1219,52 +1098,22 @@ export function drawCover(ctx, state, W, H) {
 
   drawPanelFurniture(ctx, state, panels, W, H);
 
-  if (isVariant(state.layout)) {
-    // The title band: headline, script, HEAT pill and gold seal, all
-    // inside the gap between the rows — nothing here covers a photo.
-    const band = titleBandRect(state.layout, W, H);
-    if (band) drawTitleBand(ctx, state, W, H, band);
-    comingSoonBadge(ctx, W, H);
-  } else {
-    // Legacy layouts: HEAT badge top-right, HOT seal on the second panel,
-    // headline across the lower hero, as in r9.
-    if (state.heatBadge && panels[0]) {
-      const shortHero = panels[0].h < H * 0.8;
-      if (shortHero && panels[1]) {
-        const last = panels[panels.length - 1];
-        heatBadge(ctx, W - Math.round(W * 0.015), last.y + Math.round(last.h * 0.45), H);
-      } else {
-        const badgeY = state.wantedStars > 0
-          ? panels[0].y + Math.round(H * 0.165)
-          : panels[0].y + Math.round(H * 0.03);
-        heatBadge(ctx, panels[0].x + panels[0].w - Math.round(W * 0.015), badgeY, H);
-      }
-    }
-    if (state.hotSeal && panels.length > 1 && panels[1]) {
-      const p1 = panels[1];
-      if (p1.h < H * 0.25) {
-        const sealR = Math.max(16, Math.round(Math.min(H * 0.055, p1.h * 0.26)));
-        hotSeal(ctx, p1.x + sealR + Math.round(W * 0.006), p1.y + p1.h - sealR - Math.round(H * 0.012), sealR);
-      } else {
-        const sealR = Math.max(18, Math.round(H * 0.055));
-        const sx = Math.max(p1.x + sealR, p1.x + Math.round(p1.w * 0.12));
-        const sy = Math.max(p1.y + sealR, p1.y + Math.round(p1.h * 0.5));
-        hotSeal(ctx, sx, sy, sealR);
-      }
-    }
-    drawHeadline(ctx, state, W, H, panels[0]);
-  }
+  // The title band: headline, script, tagline, HEAT pill and gold seal,
+  // all inside the gap between the panels — nothing here covers a photo.
+  const band = titleBandRect(state.layout, W, H);
+  if (band) drawTitleBand(ctx, state, W, H, band);
+  comingSoonBadge(ctx, W, H);
 
   drawStickers(ctx, state, W, H);
   if (state.bottomStrip) drawBottomStrip(ctx, state, W, H);
 
   // Wanted stars sit above everything else so they are never covered —
-  // anchored to the first panel's top-right. r10: every variant defaults
-  // to 0, so this draws nothing on the covers; only a shot URL that
+  // anchored to the first panel's top-right. Every variant defaults to
+  // 0, so this draws nothing on the covers; only a shot URL that
   // explicitly passes &stars= draws a pill.
   drawWantedStars(ctx, W, H, state.wantedStars, panels[0] ? panels[0].x + panels[0].w - Math.round(W * 0.015) : undefined);
 
-  if (state.halftone) halftone(ctx, W, H);
+  if (state.halftone) halftone(ctx, W, H, state.halftoneAmount);
   if (state.grain) {
     const tile = noiseTile();
     const pattern = ctx.createPattern(tile, 'repeat');

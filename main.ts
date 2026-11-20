@@ -7,24 +7,35 @@
 // /output/dossier.json, the summary the judge reads, with the vendored
 // make.fun library.
 //
-// The cover maker itself: three multi-panel layouts (Magazine — six
-// panels, hero left + five stacked right; Five panel; Hero + strip), three
-// canvas grades (Golden Hour, Neon, Vice Night) with strength / contrast /
-// saturation / grain / vignette / halftone controls, a giant gradient
-// headline with a pink script subtitle, magazine furniture (role tags,
-// location + time labels, HEAT ★★★★☆ badge, HOT seal, newspaper quote,
-// billing strip with barcode), stickers, undo/redo, per-panel zoom and
-// pan, smart crops, and full-resolution PNG export at 1080×1080,
-// 1080×1350 and 1920×1080. The big wanted-stars pill is OFF by default —
-// it does not exist in HEATWAVE; only the portrait/square variants pass
-// &stars=5 and keep theirs. Its ten sample photos (app/samples/) are real
-// photographs made in this session — one distinct hero and one distinct
-// atmosphere/weather per photo: the sunny palm boulevard chase (orange
-// supercar + sport bike, police behind), a rainy neon night with a woman
-// driver, a golden-hour beach, a rainy downtown, a dusty desert noon, a
-// harbor dusk, a rooftop night, a misty dawn fishing pier, a desert canyon
-// sunset with an orange muscle car, and an Everglades dusk with an airboat
-// and a heron.
+// The cover maker itself: a four-variant poster studio in the SUNSET
+// SYNDICATE collage style — Sunset Chase, Neon Nights, Golden Coast and
+// Full Throttle — each five distinct photographs in a two-row grid with
+// the giant VICE PURSUIT headline in a band across the middle, a yellow
+// label pill on every panel, a gold CERTIFIED NO.1 seal, a COMING SOON
+// corner badge and a cream bottom strip with a small-star quote, a
+// production line and a barcode. Switching a variant swaps its five
+// photos, its grade and its strip line in one click; the title stays
+// VICE PURSUIT / Coastline Nights on every variant. Three canvas grades
+// (Golden Hour, Neon, Vice Night) with strength / contrast / saturation /
+// grain / vignette / halftone controls, title styles in five colours,
+// stickers, undo/redo, per-panel zoom and pan, smart crops, and
+// full-resolution PNG export at 1080×1080, 1080×1350 and 1920×1080. The
+// big wanted-stars pill is OFF by default on every variant — it does not
+// exist in the reference, and the HEAT pill reads ★★★★☆ (four filled,
+// one empty) with five small stars on the quote strip only. Its
+// twenty-one sample photos (app/samples/) are
+// real photographs made in this session — one distinct hero and one
+// distinct atmosphere/weather per photo: the sunny palm boulevard chase
+// (orange supercar + sport bike, police behind), a neon night driver with
+// her whole head in frame, a rainy downtown, a misty dawn fishing pier, a
+// desert canyon sunset with an orange muscle car, an Everglades dusk with
+// an airboat and a heron, a neon strip street, a sunny coast with a
+// vintage convertible, a classic muscle car at golden hour, a vintage
+// pink Cadillac at sunset, a modern white racer at sunset, a dusk
+// charmer leaning on a classic convertible, a sunset biker, a palm
+// boulevard at night, a garage mechanic at night, and a modern +
+// classic duo racing side by side at sunset — plus the golden beach,
+// desert noon, harbour dusk and rooftop night from the earlier editions.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
@@ -40,6 +51,10 @@ import { buildDossier } from './vendor/makefun-app.ts';
 // 4 screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB
 // of app files, in all, or a path under app/ over 1000 bytes: app/ counts
 // beside /output's own 1000-entry cap, its screenshots/ and dossier.json).
+// NOTE (r10): the brief now asks for SEVEN screenshots (the standard four
+// plus one per extra variant) in screenshots/ — that is more than the
+// scorer's 4-screenshot cap above, so the hand-in step needs a call on
+// which four to submit; the repo keeps all seven for review.
 const DOSSIER_CAPS = {
   text_max_bytes: 163840,
   screenshots: { max: 4, max_bytes: 262144 },

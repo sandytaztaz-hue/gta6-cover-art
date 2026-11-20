@@ -1,4 +1,4 @@
-/* VICE PURSUIT STUDIO — dark editor UI (rebuild r9, six-panel edition). */
+/* VICE PURSUIT STUDIO — dark editor UI (rebuild r10, four-variant edition). */
 
 @font-face {
   font-family: "Bebas Neue";
@@ -189,6 +189,21 @@ input[type="range"] { width: 100%; accent-color: var(--pink); }
 .check input { accent-color: var(--pink); width: 16px; height: 16px; }
 
 .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Cover variant switcher (r10): the four variant buttons get a gold
+ * active state instead of the pink one, so the chosen cover reads as a
+ * poster choice, not a tool setting. */
+.variant-group { border-color: var(--gold); }
+.variant-row button {
+  flex: 1 1 44%;
+  font-size: 13px;
+  padding: 9px 10px;
+}
+.variant-row button.active {
+  background: linear-gradient(90deg, #ffb03a, #ff5e78 60%, #c93bff);
+  border-color: var(--gold);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 176, 58, 0.45);
+}
 .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
 button {

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VICE PURSUIT STUDIO — GTA-style multi-panel magazine cover maker</title>
-<meta name="description" content="Turn your photos and a caption into a GTA-style six-panel magazine cover. Three layouts, three grades, full-resolution PNG export — all offline.">
+<title>VICE PURSUIT STUDIO — GTA-style multi-panel poster studio</title>
+<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel poster. Four cover variants, twenty-one photographs, full-resolution PNG export — all offline.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,11 +14,11 @@
       <span class="brand-mark" aria-hidden="true">☀</span>
       <div>
         <h1>VICE PURSUIT STUDIO</h1>
-        <p class="tagline">Multi-panel magazine covers, made from your photos</p>
+        <p class="tagline">Four GTA-style poster variants, made from your photos</p>
       </div>
     </div>
     <div class="steps" role="list" aria-label="Three steps">
-      <span class="step" id="step1" role="listitem"><b>1</b> Add photo</span>
+      <span class="step" id="step1" role="listitem"><b>1</b> Pick a variant</span>
       <span class="step" id="step2" role="listitem"><b>2</b> Layout + caption</span>
       <span class="step" id="step3" role="listitem"><b>3</b> Export PNG</span>
     </div>
@@ -42,14 +42,25 @@
         </div>
       </div>
 
+      <div class="group variant-group">
+        <h2>Cover variant</h2>
+        <div class="btn-row variant-row" role="group" aria-label="Cover variant">
+          <button type="button" data-layout="sunset">🌅 Sunset Chase</button>
+          <button type="button" data-layout="neon">🌃 Neon Nights</button>
+          <button type="button" data-layout="coast">🏖️ Golden Coast</button>
+          <button type="button" data-layout="throttle">🏁 Full Throttle</button>
+        </div>
+        <p class="hint" id="variantHint">Five distinct photographs per variant — a different hero, mood and weather in every panel.</p>
+        <p class="hint">Switching a variant swaps its five photos, its grade and its strip line in one click. The title stays VICE PURSUIT on every variant.</p>
+      </div>
+
       <div class="group">
         <h2>Layout</h2>
         <div class="btn-row" role="group" aria-label="Layout">
-          <button type="button" data-layout="magazine">Magazine</button>
           <button type="button" data-layout="five">Five panel</button>
           <button type="button" data-layout="hero">Hero + strip</button>
         </div>
-        <p class="hint" id="layoutHint">Hero left, five stacked right, billing strip below.</p>
+        <p class="hint" id="layoutHint">Hero chase wide top-left, driver top-right, fixer / getaway / wildcard below.</p>
       </div>
 
       <div class="group">
@@ -106,12 +117,12 @@
           <option value="4">4 stars</option>
           <option value="5">5 stars</option>
         </select>
-        <p class="hint furniture-note">The big wanted-stars pill is off by default — it does not exist in HEATWAVE. The portrait and square variants still use it.</p>
-        <label class="check"><input id="tagsToggle" type="checkbox" checked> Role tags (THE CLOSER…)</label>
+        <p class="hint furniture-note">The big wanted-stars pill is off by default — it does not exist in SUNSET SYNDICATE. No variant uses it.</p>
+        <label class="check"><input id="tagsToggle" type="checkbox" checked> Role tags (THE RIDE…)</label>
         <label class="check"><input id="placesToggle" type="checkbox" checked> Location + time labels</label>
         <label class="check"><input id="heatToggle" type="checkbox" checked> HEAT ★★★★☆ badge</label>
         <p class="hint furniture-note">HEAT reads four filled stars and one empty star, exactly like HEATWAVE. The quote strip keeps all five small stars.</p>
-        <label class="check"><input id="sealToggle" type="checkbox" checked> HOT seal</label>
+        <label class="check"><input id="sealToggle" type="checkbox" checked> CERTIFIED NO.1 seal</label>
         <label class="check"><input id="quoteToggle" type="checkbox" checked> Newspaper quote</label>
         <label class="field-label" for="quoteInput">Quote</label>
         <input id="quoteInput" type="text" maxlength="80" value="HOTTER THAN THE ASPHALT" autocomplete="off">
@@ -119,7 +130,7 @@
         <input id="quoteSourceInput" type="text" maxlength="40" value="THE PALM GAZETTE" autocomplete="off">
         <label class="check"><input id="stripToggle" type="checkbox" checked> Bottom billing strip</label>
         <label class="field-label" for="stripInput">Strip text</label>
-        <input id="stripInput" type="text" maxlength="80" value="ONE COASTLINE · SIX STORIES · NO CURFEW" autocomplete="off">
+        <input id="stripInput" type="text" maxlength="80" value="ONE COASTLINE · FIVE STORIES · NO CURFEW" autocomplete="off">
       </div>
 
       <div class="group">
@@ -164,7 +175,6 @@
           <button type="button" class="panel-dot" aria-label="Panel 3">3</button>
           <button type="button" class="panel-dot" aria-label="Panel 4">4</button>
           <button type="button" class="panel-dot" aria-label="Panel 5">5</button>
-          <button type="button" class="panel-dot" aria-label="Panel 6">6</button>
         </div>
       </div>
       <div class="panel-tools">
@@ -180,7 +190,7 @@
   </main>
 
   <footer class="foot">
-    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). The ten sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
+    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). The twenty-one sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
   </footer>
 </div>
 

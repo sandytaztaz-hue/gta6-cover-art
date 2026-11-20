@@ -8,7 +8,7 @@ Turn your photos and a caption into a GTA-style multi-panel magazine cover — i
 
 ## What it does
 
-- **3 multi-panel layouts** — Magazine (hero left, five stacked right, billing strip below — the HEATWAVE look, six photographs in all), Five panel (1 hero + 4 small), Hero + strip (1 big + 3 small). Every panel is a drop zone.
+- **4 cover variants, one switcher** — Sunset Chase, Neon Nights, Golden Coast and Full Throttle, each five distinct photographs in the SUNSET SYNDICATE collage grid (two rows, giant VICE PURSUIT headline in a band across the middle, yellow label pill on every panel, gold CERTIFIED NO.1 seal, COMING SOON badge, cream bottom strip with a small-star quote and barcode). Switching a variant swaps its five photos, its grade and its strip line in one click; the title stays VICE PURSUIT / Coastline Nights on every variant, the HEAT pill reads ★★★★☆ and the big wanted-stars pill stays off. Legacy Five panel and Hero + strip layouts remain.
 - **Any photo, any panel** — add photos from your device, drag-drop onto a panel, or load the built-in samples. One photo can fill all panels with different smart crops; each panel gets its own drag-to-position, zoom slider, and fit/cover switch, plus per-panel replace and clear.
 - **Magazine furniture** — a giant gradient headline (orange → pink → purple, like a magazine masthead) with a pink script sub-caption, role tags (THE CLOSER, THE DRIVER, THE FIXER…), location + time labels (CORAL CAUSEWAY · 7:15 PM), a HEAT ★★★★☆ badge (four filled stars, one empty — exactly like HEATWAVE), a HOT starburst seal, an EST. 2026 seal, a newspaper quote ("HOTTER THAN THE ASPHALT" — THE PALM GAZETTE, all five small stars kept), and a bottom billing strip with VOL. 06 and a barcode. Every piece toggles on and off. The big five-star wanted pill at the top is OFF by default — it does not exist in HEATWAVE; only the portrait/square variants keep theirs.
 - **3 canvas grades** — Golden Hour, Neon, Vice Night, each with strength, contrast and saturation sliders, plus film grain (seeded, so exports are deterministic), vignette and halftone print dots.
@@ -30,10 +30,13 @@ A magazine cover, not a single-photo filter: the hero photo stays bright on top 
 
 ## Screenshots
 
-- `1-cover.jpg` — best exported cover (landscape 1920×1080, Magazine, Golden Hour) — the sunny chase hero front and centre, six photo panels, "VICE PURSUIT" / "Coastline Nights", HEAT ★★★★☆ badge, HOT seal, quote and billing strip, no big wanted-stars pill
-- `2-editor.jpg` — the editor with the neon night scene loaded (Magazine, Golden Hour) — a different lead scene from the cover, so the editor shot never repeats the cover photo
-- `3-cover-portrait.jpg` — portrait cover (1080×1350, Hero + strip, Neon) — the neon night street as the hero panel, "NEON PURSUIT" / "City After Dark"
-- `4-cover-square.jpg` — square cover (1080×1080, Five panel, Vice Night) — the rainy downtown as the hero panel with the five-star wanted HUD, "VICE LIGHTS" / "One Last Job"
+- `1-cover.jpg` — best exported cover (landscape 1920×1080, Sunset Chase, Golden Hour) — the sunny chase hero front and centre, five photo panels, "VICE PURSUIT" / "Coastline Nights" in the middle band, yellow pills, CERTIFIED NO.1 seal, quote and billing strip, no big wanted-stars pill
+- `2-editor.jpg` — the editor with the Neon Nights variant loaded and the variant switcher visible — a different variant from the cover, so the editor shot never repeats the cover
+- `3-cover-portrait.jpg` — portrait cover (1080×1350, Golden Coast, Golden Hour) — the sunny coast as the lead panel, "VICE PURSUIT" / "Coastline Nights"
+- `4-cover-square.jpg` — square cover (1080×1080, Full Throttle, Vice Night) — the modern + classic sunset duo as the lead panel, "VICE PURSUIT" / "Coastline Nights"
+- `5-variant-2.jpg` — Neon Nights cover (landscape) — neon strip, dusk charmer, rooftop, palm boulevard, classic muscle car
+- `6-variant-3.jpg` — Golden Coast cover (landscape) — sunny coast, beach, misty pier, vintage Cadillac, modern sunset racer
+- `7-variant-4.jpg` — Full Throttle cover (landscape) — sunset duo, rider, garage mechanic, harbour, desert
 
 The covers are the PNGs the app itself wrote, scaled to JPEG for size. `shots.json` lists the deterministic `?shot=` URLs that produce them; `tools/shot.mjs` takes them with headless Chrome.
 

@@ -1,18 +1,21 @@
-// VICE PURSUIT — editor (rebuild r9, six-panel edition).
+// VICE PURSUIT — editor (rebuild r10, four-variant edition).
 //
 // Wires the cover engine to the page: photo add / drag-drop / per-panel
-// zoom + pan, layouts, grades, sliders, title styles, callouts, stickers,
-// undo/redo, smart crops, and full-resolution PNG export. The live preview
-// and the export share drawCover, so what you see is what the PNG holds.
-// r9: the Magazine layout is six panels (hero + five stacked right), the
-// big wanted-stars pill defaults to off, the HEAT badge reads ★★★★☆, and
-// the sample strip holds ten photographs — the r8 eight plus a desert
-// canyon sunset and an Everglades dusk, both made in this session.
+// zoom + pan, variant switcher, layouts, grades, sliders, title styles,
+// callouts, stickers, undo/redo, smart crops, and full-resolution PNG
+// export. The live preview and the export share drawCover, so what you see
+// is what the PNG holds. r10: the app is a four-variant poster studio —
+// Sunset Chase, Neon Nights, Golden Coast and Full Throttle — each five
+// distinct photographs in the SUNSET SYNDICATE collage grid, each with its
+// own grade and strip line. Switching a variant swaps its five photos, its
+// grade and its strip text in one click; the title stays VICE PURSUIT /
+// Coastline Nights on every variant, and the big wanted-stars pill stays
+// off unless a shot URL asks for it.
 
 import {
-  SIZES, LAYOUTS, GRADES, CAPTION_COLORS, TITLE_STYLES,
+  SIZES, LAYOUTS, GRADES, CAPTION_COLORS, TITLE_STYLES, VARIANTS,
   defaultState, layoutPanels, panelAt, loadImage, fontsReady,
-  drawCover, renderCover,
+  drawCover, renderCover, isVariant,
 } from './cover.js';
 
 export const state = defaultState();
@@ -128,7 +131,7 @@ export function paint() {
 }
 
 function updatePanelBar() {
-  const n = (LAYOUTS[state.layout] || LAYOUTS.magazine).panels;
+  const n = (LAYOUTS[state.layout] || LAYOUTS.sunset).panels;
   const slot = state.panels[selectedPanel];
   const label = $('panelLabel');
   if (label) {
@@ -158,13 +161,21 @@ function updateSteps() {
 
 // ---------------------------------------------------------------- params
 
-/** Apply ?shot= / URL params to state (layout, grade, size, caption,
- *  colours, position, stars, furniture toggles, stickers). */
+/** Apply ?shot= / URL params to state (variant, layout, grade, size,
+ *  caption, colours, position, stars, furniture toggles, stickers). */
 export function applyParams(params) {
   const set = (key, values, fn) => {
     const v = params.get(key);
     if (v && values.includes(v)) fn(v);
   };
+  // &variant=sunset|neon|coast|throttle is the r10 way; &layout= still
+  // works for the legacy five / hero layouts.
+  const variant = params.get('variant');
+  if (variant && VARIANTS[variant]) {
+    state.layout = variant;
+    state.grade = VARIANTS[variant].grade;
+    state.stripText = VARIANTS[variant].strip;
+  }
   set('layout', Object.keys(LAYOUTS), (v) => { state.layout = v; });
   set('grade', Object.keys(GRADES), (v) => { state.grade = v; });
   set('size', Object.keys(SIZES), (v) => { state.size = v; });
@@ -202,22 +213,42 @@ export function applyParams(params) {
 
 /** Grow/shrink the panels array to the current layout's panel count. */
 export function resizePanels() {
-  const n = (LAYOUTS[state.layout] || LAYOUTS.magazine).panels;
+  const n = (LAYOUTS[state.layout] || LAYOUTS.sunset).panels;
   while (state.panels.length < n) state.panels.push(null);
   state.panels.length = n;
   if (selectedPanel >= n) selectedPanel = 0;
 }
 
+/** Switch to a variant: its grade + strip line, then its five photos.
+ *  Used by the variant switcher in the editor and by the screenshot
+ *  states. The photos load async; the grade/strip apply immediately. */
+export async function applyVariant(key) {
+  const v = VARIANTS[key];
+  if (!v) return;
+  state.layout = key;
+  state.grade = v.grade;
+  state.stripText = v.strip;
+  resizePanels();
+  await loadSamples(v.panels);
+  syncControls();
+}
+
 // ---------------------------------------------------------------- samples
 
-/** The ten in-session photographs, keyed by scene: one distinct hero and
- *  one distinct atmosphere/weather per photo, so no two panels — and no two
- *  screenshots — ever repeat a look. All ten are real photographs made in
- *  this session: the chase hero is an edit of the owner's own car photo, the
- *  other nine are AI-generated photographs. The two r9 additions sit at
- *  the end of the order so the older eight keep their places: a desert
- *  canyon at sunset with an orange muscle car on a winding road, and an
- *  Everglades airboat at dusk with a heron in the shallows. */
+/** The twenty-one photographs, keyed by scene: one distinct hero and one
+ *  distinct atmosphere/weather per photo, so no two panels — and no two
+ *  screenshots — ever repeat a look. All are real photographs made in
+ *  this session: the chase hero is an edit of the owner's own car photo,
+ *  the rest are AI-generated photographs. The eleven r10 additions sit at
+ *  the end of the order so the older ten keep their places: a new neon
+ *  driver with her whole head in frame, a neon strip street, a sunny
+ *  coast with a vintage convertible, a classic muscle car at golden hour,
+ *  a vintage pink Cadillac at sunset, a modern white racer at sunset, a
+ *  second driver (blonde, classic convertible, dusk), a sunset biker, a
+ *  palm boulevard at night, a garage mechanic at night, and a modern +
+ *  classic duo racing at sunset. Modern AND classic cars both appear —
+ *  the orange Lambo and the white racer on the modern side, the muscle
+ *  car, the Cadillac and the classic convertible on the classic side. */
 export const SAMPLES = {
   chase: { file: 'samples/chase.jpg', name: 'Chase hero', label: 'Sunny palm boulevard — orange supercar + sport bike, police behind' },
   neon: { file: 'samples/neon.jpg', name: 'Neon night', label: 'Rainy neon city — woman + red sports car' },
@@ -229,14 +260,28 @@ export const SAMPLES = {
   pier: { file: 'samples/pier.jpg', name: 'Misty pier', label: 'Misty dawn pier — boat + fisherman' },
   canyon: { file: 'samples/media-generation-canyon-0-c4d8cd01-c46e-4fe4-9a6a-28562d745c56.jpg', name: 'Canyon sunset', label: 'Desert canyon sunset — orange muscle car on a winding red-rock road' },
   everglades: { file: 'samples/media-generation-everglades-0-f52ffb10-793a-4446-a27c-4c566baf23db.jpg', name: 'Everglades dusk', label: 'Everglades dusk — airboat + heron on a sawgrass marsh' },
+  'driver-new': { file: 'samples/media-generation-driver-new-0-a4a6ffdb-ebac-4588-97b5-8489245ded3c.jpg', name: 'Neon driver', label: 'Neon night Ocean Drive — woman in sunglasses + red sports car, whole head in frame' },
+  strip: { file: 'samples/media-generation-strip-0-907e3933-3a79-4f7d-b4c5-35b26bf1dd4d.jpg', name: 'Neon strip', label: 'Neon strip street at night — signs, palms, crowd, wet asphalt' },
+  coast: { file: 'samples/media-generation-coast-0-314c9a1b-aa54-4a49-8b40-04a2bccfcf85.jpg', name: 'Sunny coast', label: 'Sunny coast road — vintage pastel convertible, turquoise ocean' },
+  'classic-muscle': { file: 'samples/media-generation-classic-muscle-0-47a21597-feaf-4c2a-ac67-f8ac41f5db5b.jpg', name: 'Classic muscle', label: 'Classic 1970s muscle car at golden hour on a palm boulevard' },
+  'vintage-caddy': { file: 'samples/media-generation-vintage-caddy-0-b7652341-d0c2-4215-af17-120b03dba907.jpg', name: 'Vintage Cadillac', label: 'Vintage pink 1950s Cadillac convertible on a beach at sunset' },
+  'modern-sunset': { file: 'samples/media-generation-modern-sunset-0-3ec9c91e-bf74-4fb1-abd0-1018865cebb6.jpg', name: 'Modern racer', label: 'Modern white sports car on a coastal highway at sunset' },
+  driver2: { file: 'samples/media-generation-driver2-0-b34dc120-e509-4bc3-ba43-661f0c663e1c.jpg', name: 'Dusk charmer', label: 'Dusk — blonde woman in sunglasses leaning on a classic red convertible, whole head in frame' },
+  biker: { file: 'samples/media-generation-biker-0-53cab0bd-72f7-4fc9-8ac6-8e725a9c76a9.jpg', name: 'Sunset rider', label: 'Motorcyclist riding into a huge orange sunset on a highway' },
+  'palm-night': { file: 'samples/media-generation-palm-night-0-b9c46a3c-400a-41a1-8b79-e24d0676d2c8.jpg', name: 'Palm boulevard', label: 'Palm boulevard at night — classic sedan under neon signs' },
+  garage: { file: 'samples/media-generation-garage-0-735bc6cb-8c50-41cd-b075-b27405361d0a.jpg', name: 'Garage night', label: 'Garage at night — mechanic under the hood of a classic muscle car' },
+  'sunset-duo': { file: 'samples/media-generation-sunset-duo-0-7f9f1cb0-4aea-484d-91d5-b31bc29942f7.jpg', name: 'Sunset duo', label: 'Modern supercar + classic muscle car racing side by side at sunset' },
 };
-export const SAMPLE_ORDER = ['chase', 'neon', 'beach', 'rain', 'desert', 'harbor', 'rooftop', 'pier', 'canyon', 'everglades'];
+export const SAMPLE_ORDER = ['chase', 'driver-new', 'rain', 'canyon', 'everglades', 'strip', 'driver2', 'rooftop', 'palm-night', 'classic-muscle', 'coast', 'beach', 'pier', 'vintage-caddy', 'modern-sunset', 'sunset-duo', 'biker', 'garage', 'harbor', 'desert', 'neon'];
 
 /** Smart crops: per-scene focus offsets, so each sample lands with its
- *  hero in frame instead of a blind centre crop. The two r9 photos keep
- *  their heroes low in the frame (the canyon's car, the Everglades boat
- *  and heron), so their offsets pull down hard — a centre crop on a short
- *  stacked panel would cut both clean off. */
+ *  hero in frame instead of a blind centre crop. The two r10 driver
+ *  photos are PORTRAIT shots framed from mid-torso up with clear sky
+ *  above the hair — their offsets pull the window UP (positive oy moves
+ *  the photo down in its panel, showing more of the top), so the whole
+ *  head stays in frame and is never cropped. The canyon and Everglades
+ *  photos keep their heroes low in the frame, so their offsets pull down
+ *  hard — a centre crop on a short row panel would cut both clean off. */
 export const SMART_CROPS = {
   chase: { ox: 0, oy: -0.04 },
   neon: { ox: 0.06, oy: 0 },
@@ -248,6 +293,17 @@ export const SMART_CROPS = {
   pier: { ox: 0.04, oy: 0.02 },
   canyon: { ox: 0, oy: -0.35 },
   everglades: { ox: 0, oy: -0.2 },
+  'driver-new': { ox: 0, oy: 0.10 },
+  strip: { ox: 0, oy: 0 },
+  coast: { ox: 0, oy: -0.05 },
+  'classic-muscle': { ox: 0, oy: -0.05 },
+  'vintage-caddy': { ox: 0, oy: -0.05 },
+  'modern-sunset': { ox: 0, oy: -0.05 },
+  driver2: { ox: 0, oy: 0.05 },
+  biker: { ox: 0, oy: -0.05 },
+  'palm-night': { ox: 0, oy: 0 },
+  garage: { ox: 0, oy: 0 },
+  'sunset-duo': { ox: 0, oy: -0.05 },
 };
 
 function slotFor(img, name, src, key) {
@@ -255,10 +311,11 @@ function slotFor(img, name, src, key) {
   return { img, name, src, zoom: 1, ox: crop.ox, oy: crop.oy, fit: 'cover' };
 }
 
-/** Load samples in the given key order into the panels (panel 1 = hero). */
+/** Load samples in the given key order into the panels (panel 1 = the
+ *  lead photo). With no order, the current variant's five photos load. */
 export async function loadSamples(order) {
-  const keys = (order && order.length ? order : SAMPLE_ORDER).filter((k) => SAMPLES[k]);
-  const n = (LAYOUTS[state.layout] || LAYOUTS.magazine).panels;
+  const keys = (order && order.length ? order : (VARIANTS[state.layout]?.panels || SAMPLE_ORDER)).filter((k) => SAMPLES[k]);
+  const n = (LAYOUTS[state.layout] || LAYOUTS.sunset).panels;
   const loaded = await Promise.all(keys.map(async (k) => {
     try {
       const img = await loadImage(SAMPLES[k].file);
@@ -277,7 +334,7 @@ export async function loadSamples(order) {
 
 /** Cycle one sample into the selected panel. */
 export async function trySample() {
-  const n = (LAYOUTS[state.layout] || LAYOUTS.magazine).panels;
+  const n = (LAYOUTS[state.layout] || LAYOUTS.sunset).panels;
   const key = SAMPLE_ORDER[(trySample.cursor = ((trySample.cursor ?? -1) + 1) % SAMPLE_ORDER.length)];
   try {
     const img = await loadImage(SAMPLES[key].file);
@@ -293,7 +350,7 @@ export function fillAllFromSelected() {
   const src = state.panels[selectedPanel];
   if (!src || !src.img) return;
   pushHistory();
-  const n = (LAYOUTS[state.layout] || LAYOUTS.magazine).panels;
+  const n = (LAYOUTS[state.layout] || LAYOUTS.sunset).panels;
   const crops = [
     { ox: 0, oy: -0.08 }, { ox: 0.12, oy: 0 }, { ox: -0.12, oy: 0.06 },
     { ox: 0, oy: 0.10 }, { ox: 0.08, oy: -0.02 }, { ox: -0.06, oy: -0.06 },
@@ -313,7 +370,7 @@ export async function addFiles(files) {
   const list = [...files].filter((f) => f.type.startsWith('image/'));
   if (!list.length) return;
   pushHistory();
-  const n = (LAYOUTS[state.layout] || LAYOUTS.magazine).panels;
+  const n = (LAYOUTS[state.layout] || LAYOUTS.sunset).panels;
   for (let i = 0; i < list.length; i++) {
     const idx = (selectedPanel + i) % n;
     const url = URL.createObjectURL(list[i]);
@@ -400,7 +457,7 @@ export function syncControls() {
   const hint = $('layoutHint');
   if (hint) hint.textContent = (LAYOUTS[state.layout] || {}).hint || '';
   const starSel = $('starCount');
-  if (starSel) starSel.value = String(state.wantedStars); // r9 default 0 — the big pill is off unless a shot URL asks for it
+  if (starSel) starSel.value = String(state.wantedStars); // r10 default 0 — the big pill is off unless a shot URL asks for it
   updateSliderLabels();
 }
 
@@ -463,10 +520,22 @@ export async function bootEditor(params) {
   on('replaceInput', 'change', (e) => { replaceSelected(e.target.files[0]); e.target.value = ''; });
   on('clearPanelBtn', 'click', clearSelected);
 
-  // Layout / grade / size / colour / style / position
-  document.querySelectorAll('[data-layout]').forEach((b) => b.addEventListener('click', () => {
+  // Variant switcher + legacy layouts. A variant button swaps the whole
+  // cover — its five photos, its grade and its strip line — in one click.
+  // Legacy layout buttons keep the old behaviour (grid only, photos stay).
+  document.querySelectorAll('[data-layout]').forEach((b) => b.addEventListener('click', async () => {
+    const key = b.dataset.layout;
+    if (isVariant(key)) {
+      pushHistory();
+      await applyVariant(key);
+      mark('layout', state.layout);
+      mark('grade', state.grade);
+      $('layoutHint').textContent = LAYOUTS[state.layout].hint;
+      paint();
+      return;
+    }
     pushHistory();
-    state.layout = b.dataset.layout;
+    state.layout = key;
     resizePanels();
     mark('layout', state.layout);
     $('layoutHint').textContent = LAYOUTS[state.layout].hint;

@@ -1,7 +1,8 @@
-// SUNREEL — GTA 6 cover art studio entry (Node 22, standard library only).
-// Hands the app in: copies app/ and screenshots/ from beside this file to
-// /output (or $MAKEFUN_OUTPUT_DIR outside the grader) and writes
-// /output/dossier.json with the vendored make.fun library.
+// GOLDEN MILE — VICE PURSUIT cover studio entry (Node 22, standard
+// library only). Hands the app in: copies app/ and screenshots/ from
+// beside this file to /output (or $MAKEFUN_OUTPUT_DIR outside the
+// grader) and writes /output/dossier.json with the vendored make.fun
+// library.
 //
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
@@ -20,10 +21,11 @@ if (existsSync(join(here, 'screenshots'))) {
   cpSync(join(here, 'screenshots'), join(out, 'screenshots'), { recursive: true });
 }
 
-// The scorer's own caps (reference/gate.json): only text_max_bytes shapes
-// the bytes; the others refuse an entry the scorer would refuse (more than
-// 4 screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB
-// of app files, in all, or a path under app/ over 1000 bytes).
+// The scorer's own caps: only text_max_bytes shapes the bytes; the
+// others refuse an entry the scorer would refuse (more than 4
+// screenshots or one over 256 KiB; more than 993 files in app/ or
+// 48 MiB of app files, in all, or a path under app/ over 1000 bytes).
+// GOLDEN MILE ships exactly 4 screenshots, all under 256 KiB.
 writeFileSync(
   join(out, 'dossier.json'),
   buildDossier(out, {

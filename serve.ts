@@ -1,9 +1,13 @@
-// A tiny static server for app/ (Node 22, standard library only), so the
-// entry can be tried locally without a build step:
+// GOLDEN MILE — a tiny static server for app/ (Node 22, standard
+// library only), so the cover studio can be tried locally with no
+// build step and no network:
+//
 //   node serve.ts            serves app/ on http://localhost:8080
 //   node serve.ts --port 8090
+//
 // It sends the MIME types an offline web app needs, refuses any path
-// outside app/, and otherwise does nothing clever.
+// outside app/, and otherwise does nothing clever. Photos are read
+// from the visitor's own machine, never uploaded.
 
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -41,36 +45,37 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
-createServer((request, response) => {
-  const url = new URL(request.url ?? '/', 'http://localhost');
-  let pathname;
+function goldenMileSafePath(urlPath) {
+  const decoded = decodeURIComponent(urlPath.split('?')[0]);
+  const cleaned = normalize(decoded).replace(/^(\.\.(\/|\\|$))+/, '');
+  const target = join(root, cleaned === '/' || cleaned === '' ? 'index.html' : cleaned);
+  return target === root || target.startsWith(root + sep) ? target : null;
+}
+
+const server = createServer((req, res) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.writeHead(405, { 'content-type': 'text/plain' });
+    res.end('method not allowed');
+    return;
+  }
+  const target = goldenMileSafePath(req.url || '/');
+  if (!target) {
+    res.writeHead(403, { 'content-type': 'text/plain' });
+    res.end('forbidden');
+    return;
+  }
+  let file = target;
   try {
-    pathname = decodeURIComponent(url.pathname);
+    if (statSync(file).isDirectory()) file = join(file, 'index.html');
   } catch {
-    response.writeHead(400).end('bad request');
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.end('not found');
     return;
   }
-  if (pathname.endsWith('/')) pathname += 'index.html';
-  const file = resolve(join(root, normalize(pathname)));
-  if (file !== root && !file.startsWith(root + sep)) {
-    response.writeHead(403).end('forbidden');
-    return;
-  }
-  let size;
-  try {
-    const stats = statSync(file);
-    if (!stats.isFile()) throw new Error('not a file');
-    size = stats.size;
-  } catch {
-    response.writeHead(404).end('not found');
-    return;
-  }
-  response.writeHead(200, {
-    'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
-    'content-length': size,
-    'cache-control': 'no-store',
-  });
-  createReadStream(file).pipe(response);
-}).listen(port, '127.0.0.1', () => {
-  console.log(`app/ is on http://localhost:${port}`);
+  res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
+  createReadStream(file).pipe(res);
+});
+
+server.listen(port, () => {
+  console.log(`GOLDEN MILE app/ is on http://localhost:${port}`);
 });

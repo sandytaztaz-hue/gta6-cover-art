@@ -1,391 +1,367 @@
-// SUNREEL cover renderer: draws one poster cover onto a canvas.
-// The cover is three stacked zones: a photo zone, a title band that owns
-// all the lettering (so text never covers a car, a bike or a face), and a
-// newspaper quote strip. Panels are clipped to their own rectangles, so a
-// photo can only ever fill its own panel.
+// GOLDEN MILE — cover model, geometry and PNG renderer for the
+// VICE PURSUIT cover studio. One cover is a magazine collage: a masthead
+// strip, a five-column photo grid with one big hero close-up in the
+// centre, a title band of its own across the middle, and a bottom strip
+// with COMING SOON, credits, a barcode and a gold BEST seal.
+//
+// The same geometry drives the live DOM preview (main.js) and the PNG
+// export below, so what you see is exactly what you download.
 
-import { GRADES, SIZES } from './shots.js';
+export const GOLDEN_MILE_TITLE = 'VICE PURSUIT';
+export const GOLDEN_MILE_SCRIPT = 'Coastline Nights';
+export const GOLDEN_MILE_RIBBON = 'ONE COASTLINE · FIVE STORIES · NO CURFEW';
+export const GOLDEN_MILE_TAGLINE = 'THE HOTTEST RIDE OF THE YEAR';
+export const GOLDEN_MILE_GAZETTE = 'VICE CITY GAZETTE';
+export const GOLDEN_MILE_CREDITS =
+  'GOLDEN MILE PICTURES  ·  A VICE CITY STORY';
+
+// The eight Golden Mile pictures: the hero close-up in the centre plus
+// one photo-realistic panel per role. fx/fy is the face (or subject)
+// point the crop keeps centred, as a fraction of the photo.
+export const GOLDEN_MILE_PANELS = [
+  { role: 'THE DRIVER', file: 'dark-driver.jpg', fx: 0.5, fy: 0.34 },
+  { role: 'THE FIXER', file: 'vice-fixer.jpg', fx: 0.74, fy: 0.22 },
+  { role: 'HERO', file: 'crime-insider.jpg', fx: 0.56, fy: 0.4 },
+  { role: 'THE SMUGGLER', file: 'vice-everglades.jpg', fx: 0.3, fy: 0.6 },
+  { role: 'THE BOSS', file: 'dark-market.jpg', fx: 0.5, fy: 0.44 },
+  { role: 'THE RIDER', file: 'runners-rider.jpg', fx: 0.68, fy: 0.38 },
+  { role: 'THE GETAWAY', file: 'vice-chase.jpg', fx: 0.38, fy: 0.56 },
+  { role: 'THE LOOKOUT', file: 'crime-lookout.jpg', fx: 0.5, fy: 0.28 },
+];
+
+// Grid placement of the eight panels, in a 5-column by 2-row grid.
+// The hero sits in the middle column and spans both rows; the boss
+// fills the whole right-hand column. Every other role takes one cell.
+export const GOLDEN_MILE_GRID = {
+  'THE DRIVER': { col: 1, row: 1, colSpan: 1, rowSpan: 1 },
+  'THE FIXER': { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
+  HERO: { col: 3, row: 1, colSpan: 1, rowSpan: 2 },
+  'THE SMUGGLER': { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
+  'THE BOSS': { col: 5, row: 1, colSpan: 1, rowSpan: 2 },
+  'THE RIDER': { col: 1, row: 2, colSpan: 1, rowSpan: 1 },
+  'THE GETAWAY': { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
+  'THE LOOKOUT': { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
+};
+
+// Five colour grades. `filter` is a canvas/DOM filter string, `wash`
+// a translucent tint painted over each photo, `title` the two stops of
+// the title gradient for this grade.
+export const GOLDEN_MILE_GRADES = {
+  golden: {
+    label: 'Golden Hour',
+    filter: 'saturate(1.28) contrast(1.07) sepia(0.26) brightness(1.02)',
+    wash: 'rgba(255,140,40,0.10)',
+    title: ['#ff2e88', '#ffb03a'],
+  },
+  neon: {
+    label: 'Neon Nights',
+    filter: 'saturate(1.65) contrast(1.12) hue-rotate(-14deg) brightness(1.0)',
+    wash: 'rgba(255,0,120,0.10)',
+    title: ['#ff2ea6', '#ff5e3a'],
+  },
+  dusk: {
+    label: 'Dusk Purple',
+    filter: 'saturate(1.18) contrast(1.06) hue-rotate(16deg) brightness(0.94)',
+    wash: 'rgba(96,44,168,0.14)',
+    title: ['#ff4fa3', '#c77dff'],
+  },
+  vice: {
+    label: 'Vice Teal',
+    filter: 'saturate(1.38) contrast(1.1) brightness(1.01)',
+    wash: 'rgba(0,205,180,0.08)',
+    title: ['#ff2e88', '#2ee6c8'],
+  },
+  noir: {
+    label: 'Noir',
+    filter: 'grayscale(0.55) contrast(1.28) brightness(0.96)',
+    wash: 'rgba(0,0,0,0.08)',
+    title: ['#ff5c8a', '#ffd23e'],
+  },
+};
+
+export const GOLDEN_MILE_GRADE_IDS = Object.keys(GOLDEN_MILE_GRADES);
+
+// The three post sizes the bounty asks for.
+export const GOLDEN_MILE_SIZES = {
+  square: { label: 'Square · 1080 × 1080', width: 1080, height: 1080 },
+  portrait: { label: 'Portrait · 1080 × 1350', width: 1080, height: 1350 },
+  landscape: { label: 'Wide · 1920 × 1080', width: 1920, height: 1080 },
+};
+
+// Fresh default state: the Golden Mile cover, golden grade, square.
+export function goldenMileDefaultState() {
+  return {
+    title: GOLDEN_MILE_TITLE,
+    script: GOLDEN_MILE_SCRIPT,
+    ribbon: GOLDEN_MILE_RIBBON,
+    grade: 'golden',
+    size: 'square',
+    panels: GOLDEN_MILE_PANELS.map((p) => ({
+      role: p.role,
+      src: 'samples/' + p.file,
+      fx: p.fx,
+      fy: p.fy,
+      zoom: 1,
+      flip: false,
+    })),
+  };
+}
+
+// Cover geometry, all in fractions of the cover width/height, so the
+// DOM preview and the canvas export agree exactly.
+export function goldenMileLayout(sizeId) {
+  const wide = sizeId === 'landscape';
+  const tall = sizeId === 'portrait';
+  return {
+    masthead: { x: 0, y: 0, w: 1, h: wide ? 0.052 : tall ? 0.042 : 0.05 },
+    grid: {
+      x: 0.008,
+      y: wide ? 0.062 : tall ? 0.05 : 0.058,
+      w: 0.984,
+      h: wide ? 0.86 : tall ? 0.884 : 0.862,
+      gap: 0.006,
+      cols: [0.16, 0.16, 0.36, 0.16, 0.16],
+    },
+    // The title band sits low on the hero's chest, below the chin, so
+    // the lettering never covers a face; it overlaps only the bottom
+    // row of panels, magazine-style.
+    titleBand: { x: 0, y: wide ? 0.54 : tall ? 0.58 : 0.57, w: 1, h: 0.24 },
+    foot: { x: 0, y: wide ? 0.93 : tall ? 0.942 : 0.928, w: 1, h: 0.072 },
+    seal: { x: 0.885, y: wide ? 0.8 : tall ? 0.845 : 0.815, r: wide ? 0.048 : 0.055 },
+  };
+}
+
+// Rectangle of one grid cell, in pixels, for a cover of W x H.
+export function goldenMileCellRect(layout, W, H, role) {
+  const g = layout.grid;
+  const cell = GOLDEN_MILE_GRID[role];
+  const colW = (i) => g.cols[i] * g.w * W;
+  const rowH = (g.h * H) / 2;
+  let x = g.x * W;
+  for (let i = 0; i < cell.col - 1; i += 1) x += colW(i) + g.gap * W;
+  const y = g.y * H + (cell.row - 1) * (rowH + g.gap * H);
+  let w = 0;
+  for (let i = 0; i < cell.colSpan; i += 1) w += colW(cell.col - 1 + i);
+  w += (cell.colSpan - 1) * g.gap * W;
+  const h = rowH * cell.rowSpan + (cell.rowSpan - 1) * g.gap * H;
+  return { x, y, w, h };
+}
+
+// ---- PNG renderer -------------------------------------------------------
 
 const TITLE_FONT = '"Anton", "Archivo Black", sans-serif';
-const TAG_FONT = '"Archivo Black", sans-serif';
-const SCRIPT_FONT = '"Bebas Neue", sans-serif';
+const LABEL_FONT = '"Archivo Black", sans-serif';
+const SCRIPT_FONT = '"Segoe Script", "Snell Roundhand", cursive';
 
-let noiseTile = null;
-
-function makeNoiseTile() {
-  if (noiseTile) return noiseTile;
-  const c = document.createElement('canvas');
-  c.width = 128;
-  c.height = 128;
-  const g = c.getContext('2d');
-  const img = g.createImageData(128, 128);
-  for (let i = 0; i < img.data.length; i += 4) {
-    const v = 110 + Math.floor(Math.random() * 90);
-    img.data[i] = v;
-    img.data[i + 1] = v;
-    img.data[i + 2] = v;
-    img.data[i + 3] = 255;
-  }
-  g.putImageData(img, 0, 0);
-  noiseTile = c;
-  return c;
-}
-
-function fitFont(ctx, text, maxWidth, startPx, family, weight) {
-  let px = startPx;
-  while (px > 12) {
-    ctx.font = `${weight || ''} ${px}px ${family}`.trim();
-    if (ctx.measureText(text).width <= maxWidth) break;
-    px -= 2;
-  }
-  return px;
-}
-
-function resolveImg(images, file) {
-  if (!file) return null;
-  if (images[file]) return images[file];
-  if (file.startsWith('data:')) return images[file] || null;
-  return images['samples/' + file] || null;
-}
-
-function drawPhoto(ctx, img, rect, panel, paint, gradeTint) {
-  if (!img || !img.naturalWidth) {
-    ctx.fillStyle = '#241533';
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-    return;
-  }
-  const iw = img.naturalWidth;
-  const ih = img.naturalHeight;
-  const zoom = Math.max(0.5, panel.zoom || 1);
+// Draw one photo into its cell, cover-fitting around the face point.
+function drawGoldenMilePhoto(ctx, img, rect, panel, grade) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  const zoom = panel.zoom || 1;
   const scale = Math.max(rect.w / iw, rect.h / ih) * zoom;
   const dw = iw * scale;
   const dh = ih * scale;
-  const dx = rect.x + (rect.w - dw) / 2 + (panel.ox || 0) * rect.w * 0.2;
-  const dy = rect.y + (rect.h - dh) / 2 + (panel.oy || 0) * rect.h * 0.2;
+  // Keep the face point at the cell centre as far as the photo allows.
+  const cx = panel.fx * dw;
+  const cy = panel.fy * dh;
+  let dx = rect.x + rect.w / 2 - cx;
+  let dy = rect.y + rect.h / 2 - cy;
+  dx = Math.min(rect.x, Math.max(rect.x + rect.w - dw, dx));
+  dy = Math.min(rect.y, Math.max(rect.y + rect.h - dh, dy));
   ctx.save();
   ctx.beginPath();
   ctx.rect(rect.x, rect.y, rect.w, rect.h);
   ctx.clip();
-  ctx.filter = `saturate(${1 + paint * 0.35}) contrast(${1 + paint * 0.18}) brightness(${1 + paint * 0.04})`;
+  ctx.filter = grade.filter;
   if (panel.flip) {
-    ctx.translate(rect.x + rect.w / 2, 0);
+    ctx.translate(rect.x + rect.w, 0);
     ctx.scale(-1, 1);
-    ctx.translate(-(rect.x + rect.w / 2), 0);
-  }
-  ctx.drawImage(img, dx, dy, dw, dh);
-  ctx.restore();
-  ctx.filter = 'none';
-  if (gradeTint) {
-    ctx.fillStyle = gradeTint;
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-  }
-}
-
-function drawTag(ctx, rect, text, show) {
-  if (!show || !text) return;
-  const pad = Math.max(8, rect.h * 0.02);
-  const h = Math.max(20, Math.min(rect.h * 0.085, rect.w * 0.16));
-  ctx.font = `bold ${Math.round(h * 0.5)}px ${TAG_FONT}`;
-  const tw = ctx.measureText(text).width;
-  const w = tw + pad * 2.4;
-  const x = rect.x + pad;
-  const y = rect.y + rect.h - h - pad;
-  ctx.fillStyle = '#ffc531';
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, h / 2.4);
-  ctx.fill();
-  ctx.fillStyle = '#160a1e';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  ctx.fillText(text, x + pad * 1.2, y + h / 2 + 1);
-}
-
-function drawComingSoon(ctx, rect, show) {
-  if (!show) return;
-  const h = Math.max(22, Math.min(rect.h * 0.09, rect.w * 0.13));
-  const pad = Math.max(10, rect.h * 0.03);
-  const text = 'COMING SOON';
-  ctx.font = `bold ${Math.round(h * 0.52)}px ${TAG_FONT}`;
-  const w = ctx.measureText(text).width + pad * 2;
-  const x = rect.x + pad;
-  const y = rect.y + pad;
-  ctx.fillStyle = '#ff2e88';
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, h / 2.4);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  ctx.fillText(text, x + pad, y + h / 2 + 1);
-}
-
-function drawSeal(ctx, cx, cy, r) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.beginPath();
-  const spikes = 16;
-  for (let i = 0; i <= spikes * 2; i++) {
-    const ang = (i / (spikes * 2)) * Math.PI * 2;
-    const rad = i % 2 === 0 ? r : r * 0.86;
-    const x = Math.cos(ang) * rad;
-    const y = Math.sin(ang) * rad;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fillStyle = '#ffc531';
-  ctx.fill();
-  ctx.lineWidth = Math.max(2, r * 0.06);
-  ctx.strokeStyle = '#8a5a00';
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.74, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = '#160a1e';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold ${Math.round(r * 0.22)}px ${TAG_FONT}`;
-  ctx.fillText('CERTIFIED', 0, -r * 0.26);
-  ctx.font = `bold ${Math.round(r * 0.34)}px ${TAG_FONT}`;
-  ctx.fillText('NO.1', 0, r * 0.26);
-  ctx.restore();
-}
-
-function drawHeatPill(ctx, x, y, h) {
-  const text = 'HEAT ';
-  const stars = '★★★★☆';
-  ctx.font = `bold ${Math.round(h * 0.42)}px ${TAG_FONT}`;
-  const w = ctx.measureText(text + stars).width + h * 1.1;
-  ctx.strokeStyle = '#ffbf3f';
-  ctx.lineWidth = Math.max(2, h * 0.07);
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, h / 2);
-  ctx.stroke();
-  ctx.fillStyle = '#ffbf3f';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  ctx.fillText(text, x + h * 0.55, y + h / 2 + 1);
-  const tw = ctx.measureText(text).width;
-  ctx.fillText(stars, x + h * 0.55 + tw, y + h / 2 + 1);
-  return w;
-}
-
-// Panel rectangles for one layout inside the photo zones.
-export function panelRects(layout, top, bottom, gap, count) {
-  const rects = [];
-  const split = (zone, n) => {
-    if (n <= 0) return;
-    const w = (zone.w - gap * (n - 1)) / n;
-    for (let i = 0; i < n; i++) {
-      rects.push({ x: zone.x + i * (w + gap), y: zone.y, w, h: zone.h });
-    }
-  };
-  if (layout === 'sunset' || layout === 'mosaic') {
-    const heroW = (top.w - gap) * 0.62;
-    rects.push({ x: top.x, y: top.y, w: heroW, h: top.h });
-    rects.push({ x: top.x + heroW + gap, y: top.y, w: top.w - heroW - gap, h: top.h });
-    split(bottom, count - 2);
-  } else if (layout === 'diagonal') {
-    const w = (top.w - gap * (count - 1)) / count;
-    for (let i = 0; i < count; i++) {
-      rects.push({ x: top.x + i * (w + gap), y: top.y, w, h: top.h, slant: top.w * 0.045 });
-    }
-  } else if (layout === 'hero3') {
-    rects.push({ x: top.x, y: top.y, w: top.w, h: top.h });
-    split(bottom, count - 1);
+    ctx.drawImage(img, dx - rect.x - rect.w, dy, dw, dh);
   } else {
-    const topN = Math.min(3, Math.ceil(count / 2));
-    split(top, topN);
-    split(bottom, count - topN);
+    ctx.drawImage(img, dx, dy, dw, dh);
   }
-  return rects;
+  ctx.filter = 'none';
+  ctx.fillStyle = grade.wash;
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  ctx.restore();
+  // Thin gold frame + role chip, bottom-left of the panel.
+  ctx.strokeStyle = 'rgba(255, 210, 90, 0.85)';
+  ctx.lineWidth = Math.max(1.5, rect.w * 0.008);
+  ctx.strokeRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+  if (panel.role !== 'HERO') {
+    const fs = Math.max(11, rect.w * 0.085);
+    ctx.font = `${fs}px ${LABEL_FONT}`;
+    const tw = ctx.measureText(panel.role).width;
+    const pad = fs * 0.55;
+    const bx = rect.x + rect.w * 0.04;
+    const by = rect.y + rect.h - fs * 2.1;
+    ctx.fillStyle = 'rgba(10, 4, 12, 0.88)';
+    ctx.fillRect(bx, by, tw + pad * 2, fs * 1.7);
+    ctx.fillStyle = '#ffd23e';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(panel.role, bx + pad, by + fs * 0.85);
+  }
 }
 
-export function drawCover(ctx, W, H, state, images) {
-  const grade = GRADES[state.grade] || GRADES.golden;
-  const size = SIZES[state.size] || SIZES.landscape;
-  const strength = state.strength ?? 0.8;
-  const s = state.sliders || { paint: 60, grade: 80, halftone: 20, grain: 50, glow: 50 };
-  const t = state.toggles || {};
-  const gap = Math.max(3, W * 0.004);
-  const bandH = Math.round(H * 0.21);
-  const quoteH = t.quote === false ? 0 : Math.round(H * 0.055);
-  const photoH = H - bandH - quoteH;
-  const isDiag = state.layout === 'diagonal';
-  const topH = isDiag ? photoH : Math.round(photoH * 0.56);
-  const botH = photoH - topH;
-  const top = { x: 0, y: 0, w: W, h: topH };
-  const bottom = { x: 0, y: topH, w: W, h: botH };
-  const bandY = photoH;
-
-  const paint = (s.paint / 100) * strength;
-  const gradeAmt = (s.grade / 100) * strength;
-  const panels = state.panels || [];
-  const rects = panelRects(state.layout, top, bottom, gap, panels.length);
-
-  // Photos.
-  for (let i = 0; i < rects.length; i++) {
-    const r = rects[i];
-    const p = panels[i];
-    if (!p) continue;
-    if (r.slant) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(r.x + r.slant, r.y);
-      ctx.lineTo(r.x + r.w, r.y);
-      ctx.lineTo(r.x + r.w - r.slant, r.y + r.h);
-      ctx.lineTo(r.x, r.y + r.h);
-      ctx.closePath();
-      ctx.clip();
-      drawPhoto(ctx, resolveImg(images, p.file), { x: r.x - r.slant, y: r.y, w: r.w + r.slant * 2, h: r.h }, p, paint, gradeAmt ? hexA(grade.overlay, gradeAmt) : null);
-      ctx.restore();
-      ctx.strokeStyle = grade.bandLine;
-      ctx.lineWidth = Math.max(2, W * 0.002);
-      ctx.beginPath();
-      ctx.moveTo(r.x + r.slant, r.y);
-      ctx.lineTo(r.x, r.y + r.h);
-      ctx.stroke();
-    } else {
-      drawPhoto(ctx, resolveImg(images, p.file), r, p, paint, gradeAmt ? hexA(grade.overlay, gradeAmt) : null);
-    }
-    drawTag(ctx, r, p.label, t.tags !== false);
-    if (i === 0) drawComingSoon(ctx, r, t.comingSoon !== false);
+function drawGoldenMileBarcode(ctx, x, y, w, h) {
+  ctx.fillStyle = '#f5f0e6';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#14100c';
+  let bx = x + w * 0.06;
+  const bars = [3, 1, 2, 1, 1, 3, 2, 2, 1, 1, 4, 1, 2, 3, 1, 2, 1, 1, 3, 2];
+  for (const b of bars) {
+    const bw = (w * 0.028) * b;
+    ctx.fillRect(bx, y + h * 0.08, bw, h * 0.72);
+    bx += bw + w * 0.02;
+    if (bx > x + w * 0.94) break;
   }
+}
 
-  // Neon divider lines around the photo zones.
-  ctx.fillStyle = grade.bandLine;
-  ctx.fillRect(0, topH - gap / 2, W, gap);
-  ctx.fillRect(0, photoH - gap / 2, W, gap);
-
-  // Title band — the only place the title lives.
-  ctx.fillStyle = grade.band;
-  ctx.fillRect(0, bandY, W, bandH);
-  ctx.fillStyle = grade.bandLine;
-  ctx.fillRect(0, bandY, W, Math.max(2, H * 0.004));
-  ctx.fillRect(0, bandY + bandH - Math.max(2, H * 0.004), W, Math.max(2, H * 0.004));
-
-  const bandPad = W * 0.03;
-  const heatH = Math.round(bandH * 0.24);
-  let heatW = 0;
-  if (t.heat !== false) {
-    heatW = drawHeatPill(ctx, bandPad, bandY + bandH * 0.16, heatH);
-  }
-  const sealR = bandH * 0.36;
-  if (t.seal !== false) {
-    drawSeal(ctx, W - bandPad - bandH * 0.34, bandY + bandH / 2, sealR);
-  }
-
-  const titleZone = {
-    x: bandPad + (heatW ? heatW + W * 0.015 : 0),
-    w: W - bandPad * 2 - (heatW ? heatW + W * 0.015 : 0) - (t.seal !== false ? sealR * 2 + W * 0.02 : 0),
-  };
-  const title = (state.title || 'VICE PURSUIT').toUpperCase();
-  const titlePx = fitFont(ctx, title, titleZone.w, Math.round(bandH * 0.36), TITLE_FONT, '');
-  const grad = ctx.createLinearGradient(0, bandY + bandH * 0.16, 0, bandY + bandH * 0.62);
-  grad.addColorStop(0, grade.titleFrom);
-  grad.addColorStop(1, grade.titleTo);
+function drawGoldenMileSeal(ctx, cx, cy, r) {
   ctx.save();
-  if (s.glow > 0) {
-    ctx.shadowColor = grade.glow;
-    ctx.shadowBlur = (s.glow / 100) * bandH * 0.28 * strength;
-  }
-  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  const gold = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+  gold.addColorStop(0, '#ffe98a');
+  gold.addColorStop(0.55, '#f5b81e');
+  gold.addColorStop(1, '#a86e00');
+  ctx.fillStyle = gold;
+  ctx.fill();
+  ctx.lineWidth = r * 0.07;
+  ctx.strokeStyle = '#7a4d00';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.8, 0, Math.PI * 2);
+  ctx.lineWidth = r * 0.04;
+  ctx.strokeStyle = 'rgba(122, 77, 0, 0.8)';
+  ctx.stroke();
+  ctx.fillStyle = '#4d2f00';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(title, titleZone.x + titleZone.w / 2, bandY + bandH * 0.38);
+  ctx.font = `${r * 0.42}px ${LABEL_FONT}`;
+  ctx.fillText('★ BEST ★', cx, cy - r * 0.2);
+  ctx.font = `${r * 0.34}px ${LABEL_FONT}`;
+  ctx.fillText('SELLER', cx, cy + r * 0.26);
   ctx.restore();
-
-  const script = state.script || '';
-  if (script) {
-    ctx.save();
-    ctx.translate(titleZone.x + titleZone.w / 2, bandY + bandH * 0.7);
-    ctx.transform(1, 0, -0.12, 1, 0, 0);
-    ctx.font = `${Math.round(bandH * 0.22)}px ${SCRIPT_FONT}`;
-    ctx.fillStyle = '#ff7ad9';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(script, 0, 0);
-    ctx.restore();
-  }
-  const tagline = (state.tagline || '').toUpperCase();
-  if (tagline) {
-    ctx.font = `bold ${Math.round(bandH * 0.11)}px ${TAG_FONT}`;
-    ctx.fillStyle = grade.accent;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(tagline, titleZone.x + titleZone.w / 2, bandY + bandH * 0.9);
-  }
-
-  // Quote strip.
-  if (quoteH > 0) {
-    const qy = H - quoteH;
-    ctx.fillStyle = '#f2e3c2';
-    ctx.fillRect(0, qy, W, quoteH);
-    ctx.fillStyle = '#3a2a12';
-    ctx.textBaseline = 'middle';
-    const qh = Math.round(quoteH * 0.34);
-    ctx.font = `${qh}px ${TAG_FONT}`;
-    const stars = '★★★★★';
-    const sw = ctx.measureText(stars).width;
-    ctx.fillStyle = '#b8860b';
-    ctx.textAlign = 'left';
-    ctx.fillText(stars, W * 0.03, qy + quoteH * 0.38);
-    ctx.fillStyle = '#1c1206';
-    const qtext = `"${(state.quote || '').toUpperCase()}" — ${state.quoteSource || ''}`;
-    const qpx = fitFont(ctx, qtext, W * 0.62, Math.round(quoteH * 0.36), TAG_FONT, 'bold');
-    ctx.font = `bold ${qpx}px ${TAG_FONT}`;
-    ctx.fillText(qtext, W * 0.03 + sw + W * 0.015, qy + quoteH * 0.38);
-    ctx.font = `bold ${Math.round(quoteH * 0.3)}px ${TAG_FONT}`;
-    ctx.textAlign = 'right';
-    ctx.fillText('VOL. 06', W * 0.97, qy + quoteH * 0.38);
-    // Barcode ticks.
-    const bx = W * 0.78;
-    ctx.fillStyle = '#1c1206';
-    for (let i = 0; i < 9; i++) {
-      const bw = 2 + (i % 3);
-      ctx.fillRect(bx + i * 7, qy + quoteH * 0.62, bw, quoteH * 0.24);
-    }
-    ctx.font = `bold ${Math.round(quoteH * 0.26)}px ${TAG_FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillText((state.tagline || '').toUpperCase(), W * 0.03, qy + quoteH * 0.78);
-  }
-
-  // Halftone dots, grain and vignette on top of everything.
-  if (s.halftone > 0 && t.halftoneDots) {
-    ctx.save();
-    ctx.globalAlpha = (s.halftone / 100) * 0.25 * strength;
-    ctx.fillStyle = '#000000';
-    const step = Math.max(6, W / 160);
-    for (let y = step / 2; y < H; y += step) {
-      for (let x = step / 2; x < W; x += step) {
-        ctx.beginPath();
-        ctx.arc(x, y, step * 0.14, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  }
-  if (s.grain > 0 && t.filmGrain !== false) {
-    ctx.save();
-    ctx.globalAlpha = (s.grain / 100) * 0.12 * strength;
-    const tile = makeNoiseTile();
-    ctx.fillStyle = ctx.createPattern(tile, 'repeat');
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
-  if (t.vignette !== false) {
-    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.45, W / 2, H / 2, Math.max(W, H) * 0.75);
-    vg.addColorStop(0, 'rgba(0,0,0,0)');
-    vg.addColorStop(1, 'rgba(0,0,0,0.32)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, W, H);
-  }
 }
 
-function hexA(rgba, amt) {
-  const m = rgba.match(/rgba?\(([^)]+)\)/);
-  if (!m) return rgba;
-  const parts = m[1].split(',').map((v) => v.trim());
-  const a = parts.length > 3 ? Number(parts[3]) * amt : amt;
-  return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${a})`;
+// Draw the whole Golden Mile cover onto ctx at W x H.
+// `images` maps a panel src to a loaded HTMLImageElement.
+export function drawGoldenMileCover(ctx, state, images, W, H) {
+  const grade = GOLDEN_MILE_GRADES[state.grade] || GOLDEN_MILE_GRADES.golden;
+  const layout = goldenMileLayout(state.size);
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#160a12';
+  ctx.fillRect(0, 0, W, H);
+
+  // Photo grid.
+  for (const panel of state.panels) {
+    const img = images[panel.src];
+    if (!img) continue;
+    drawGoldenMilePhoto(ctx, img, goldenMileCellRect(layout, W, H, panel.role), panel, grade);
+  }
+
+  // Masthead strip.
+  const mh = layout.masthead.h * H;
+  ctx.fillStyle = '#12060d';
+  ctx.fillRect(0, 0, W, mh);
+  ctx.fillStyle = '#ffd23e';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  const mfs = mh * 0.42;
+  ctx.font = `${mfs}px ${LABEL_FONT}`;
+  ctx.fillText('★★★★★', W * 0.018, mh * 0.52);
+  ctx.fillStyle = '#f5f0e6';
+  ctx.font = `${mfs * 0.92}px ${LABEL_FONT}`;
+  ctx.fillText(GOLDEN_MILE_TAGLINE, W * 0.115, mh * 0.52);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff7ab8';
+  ctx.fillText(GOLDEN_MILE_GAZETTE, W * 0.62, mh * 0.52);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#14100c';
+  const volW = W * 0.075;
+  ctx.fillStyle = '#ffd23e';
+  ctx.fillRect(W * 0.915, mh * 0.18, volW, mh * 0.64);
+  ctx.fillStyle = '#14100c';
+  ctx.font = `${mfs * 0.85}px ${LABEL_FONT}`;
+  ctx.fillText('VOL. 1', W * 0.915 + volW / 2, mh * 0.52);
+  ctx.textAlign = 'left';
+  ctx.strokeStyle = 'rgba(255, 210, 90, 0.6)';
+  ctx.lineWidth = Math.max(1, H * 0.0015);
+  ctx.beginPath();
+  ctx.moveTo(0, mh);
+  ctx.lineTo(W, mh);
+  ctx.stroke();
+
+  // Title band: its own zone across the middle, so the lettering never
+  // covers a car, a bike, a person or a face.
+  const bandY = layout.titleBand.y * H;
+  const bandH = layout.titleBand.h * H;
+  const grad = ctx.createLinearGradient(W * 0.1, 0, W * 0.9, 0);
+  grad.addColorStop(0, grade.title[0]);
+  grad.addColorStop(0.55, '#ff7a18');
+  grad.addColorStop(1, grade.title[1]);
+  ctx.textAlign = 'center';
+  const titleSize = Math.min(W * 0.115, bandH * 0.52);
+  ctx.font = `${titleSize}px ${TITLE_FONT}`;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  ctx.shadowBlur = titleSize * 0.12;
+  ctx.shadowOffsetY = titleSize * 0.05;
+  ctx.fillStyle = grad;
+  ctx.fillText(state.title, W / 2, bandY + titleSize * 0.62);
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  // Pink script subhead.
+  ctx.fillStyle = '#ff8fc7';
+  ctx.font = `italic ${bandH * 0.24}px ${SCRIPT_FONT}`;
+  ctx.fillText(state.script, W / 2, bandY + titleSize * 0.95 + bandH * 0.12);
+  // Ribbon line.
+  ctx.font = `${bandH * 0.115}px ${LABEL_FONT}`;
+  const ribbonText = state.ribbon;
+  const rw = ctx.measureText(ribbonText).width + bandH * 0.3;
+  const rx = (W - rw) / 2;
+  const ry = bandY + titleSize * 0.95 + bandH * 0.34;
+  const rg = ctx.createLinearGradient(rx, 0, rx + rw, 0);
+  rg.addColorStop(0, '#ffd23e');
+  rg.addColorStop(1, '#ff7a18');
+  ctx.fillStyle = rg;
+  ctx.fillRect(rx, ry, rw, bandH * 0.17);
+  ctx.fillStyle = '#2a0a12';
+  ctx.fillText(ribbonText, W / 2, ry + bandH * 0.085);
+
+  // Bottom strip: COMING SOON, credits, barcode.
+  const footY = layout.foot.y * H;
+  const footH = layout.foot.h * H;
+  ctx.fillStyle = '#12060d';
+  ctx.fillRect(0, footY, W, footH);
+  ctx.fillStyle = '#ffd23e';
+  ctx.font = `${footH * 0.42}px ${LABEL_FONT}`;
+  ctx.fillText('—  COMING SOON  —', W * 0.018, footY + footH * 0.52);
+  ctx.fillStyle = 'rgba(245, 240, 230, 0.75)';
+  ctx.font = `${Math.max(9, footH * 0.16)}px ${LABEL_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(GOLDEN_MILE_CREDITS, W * 0.5, footY + footH * 0.52);
+  ctx.textAlign = 'left';
+  drawGoldenMileBarcode(ctx, W * 0.86, footY + footH * 0.14, W * 0.115, footH * 0.72);
+
+  // Gold BEST seal, overlapping the bottom-right of the grid.
+  drawGoldenMileSeal(
+    ctx,
+    layout.seal.x * W,
+    layout.seal.y * H,
+    layout.seal.r * W,
+  );
+}
+
+// Render the cover to a PNG blob at one of the three post sizes.
+export async function exportGoldenMilePng(state, images, sizeId) {
+  const size = GOLDEN_MILE_SIZES[sizeId] || GOLDEN_MILE_SIZES.square;
+  const canvas = document.createElement('canvas');
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const ctx = canvas.getContext('2d');
+  const renderState = { ...state, size: sizeId };
+  drawGoldenMileCover(ctx, renderState, images, size.width, size.height);
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }

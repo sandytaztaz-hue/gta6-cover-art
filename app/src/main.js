@@ -1,544 +1,406 @@
-// SUNREEL editor: wires the three-column studio to the cover renderer.
-// State is one plain object; every control mutates it and calls render().
-// Photos come from the bundled samples or from the user's own files, read
-// locally with FileReader and never uploaded anywhere.
+// GOLDEN MILE editor: builds the live magazine cover from state, wires
+// the studio controls, and exports real PNGs. Photos come from the
+// bundled samples or from the user's own files, read locally with
+// FileReader and never uploaded anywhere.
 
-import { VARIANTS, GRADES, LAYOUTS, SIZES, SAMPLE_DIR, variantById, gradeById, readQuery, freshPanels } from './shots.js';
-import { drawCover, panelRects } from './cover.js';
+import {
+  GOLDEN_MILE_TITLE,
+  GOLDEN_MILE_SCRIPT,
+  GOLDEN_MILE_RIBBON,
+  GOLDEN_MILE_TAGLINE,
+  GOLDEN_MILE_GAZETTE,
+  GOLDEN_MILE_CREDITS,
+  GOLDEN_MILE_GRADES,
+  GOLDEN_MILE_GRADE_IDS,
+  GOLDEN_MILE_SIZES,
+  goldenMileDefaultState,
+  drawGoldenMileCover,
+  exportGoldenMilePng,
+} from './cover.js';
+import {
+  GOLDEN_MILE_SAMPLES,
+  GOLDEN_MILE_GRADE_SWATCH,
+  readGoldenMileQuery,
+  applyGoldenMileQuery,
+} from './shots.js';
 
-const query = readQuery(window.location.search);
-const canvas = document.getElementById('coverCanvas');
-const ctx = canvas.getContext('2d');
-const images = {};
+const query = readGoldenMileQuery(window.location.search);
+const state = applyGoldenMileQuery(goldenMileDefaultState(), query);
+let selected = 2; // the hero panel, centre of the cover
+const images = {}; // src -> loaded HTMLImageElement
 const userPhotos = [];
 
-const state = {
-  variant: query.variant,
-  grade: query.grade || variantById(query.variant).grade,
-  layout: variantById(query.variant).layout,
-  size: query.size in SIZES ? query.size : 'landscape',
-  title: query.caption || variantById(query.variant).title,
-  script: query.subcaption || variantById(query.variant).script,
-  tagline: variantById(query.variant).tagline,
-  quote: variantById(query.variant).quote,
-  quoteSource: variantById(query.variant).quoteSource,
-  panels: freshPanels(variantById(query.variant), query.panels),
-  selected: 0,
-  strength: query.strength,
-  sliders: { paint: 63, grade: 80, halftone: 20, grain: 50, glow: 50 },
-  toggles: {
-    tags: true, heat: true, seal: true, quote: true,
-    comingSoon: true, vignette: true, filmGrain: true, halftoneDots: false,
-  },
-};
-
-const history = [];
-let historyIndex = -1;
-
-function snapshot() {
-  return JSON.stringify({
-    variant: state.variant, grade: state.grade, layout: state.layout,
-    title: state.title, script: state.script, tagline: state.tagline,
-    quote: state.quote, quoteSource: state.quoteSource,
-    panels: state.panels, sliders: state.sliders, toggles: state.toggles,
-  });
-}
-
-function pushHistory() {
-  history.length = historyIndex + 1;
-  history.push(snapshot());
-  if (history.length > 60) history.shift();
-  historyIndex = history.length - 1;
-  syncUndoButtons();
-}
-
-function applySnapshot(json) {
-  const s = JSON.parse(json);
-  Object.assign(state, s);
-  syncAllControls();
-  render();
-}
-
-function undo() {
-  if (historyIndex > 0) {
-    historyIndex -= 1;
-    applySnapshot(history[historyIndex]);
-    syncUndoButtons();
-  }
-}
-
-function redo() {
-  if (historyIndex < history.length - 1) {
-    historyIndex += 1;
-    applySnapshot(history[historyIndex]);
-    syncUndoButtons();
-  }
-}
-
-function syncUndoButtons() {
-  const u = document.getElementById('undoBtn');
-  const r = document.getElementById('redoBtn');
-  if (u) u.disabled = historyIndex <= 0;
-  if (r) r.disabled = historyIndex >= history.length - 1;
-}
+const $ = (id) => document.getElementById(id);
+const coverMount = $('coverMount');
+const shotWrap = $('shotWrap');
 
 function loadImage(src) {
   if (images[src]) return Promise.resolve(images[src]);
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => { images[src] = img; resolve(img); };
+    img.onload = () => {
+      images[src] = img;
+      resolve(img);
+    };
     img.onerror = () => resolve(null);
     img.src = src;
   });
 }
 
-async function preloadVariant() {
-  const files = new Set();
-  for (const v of VARIANTS) for (const p of v.panels) files.add(SAMPLE_DIR + p.file);
-  for (const u of userPhotos) files.add(u.src);
-  await Promise.all([...files].map(loadImage));
+function loadAllPanelImages() {
+  return Promise.all(state.panels.map((p) => loadImage(p.src)));
 }
 
-function currentSize() {
-  return SIZES[state.size];
-}
+// Build the DOM cover for the current state. The structure mirrors the
+// canvas renderer in cover.js: masthead, five-column grid, title band
+// in its own zone, bottom strip, gold seal.
+function buildGoldenMileCoverEl() {
+  const cover = document.createElement('div');
+  cover.className = 'gm-cover';
+  cover.dataset.grade = state.grade;
+  cover.dataset.size = state.size;
 
-function render() {
-  const size = currentSize();
-  const scale = Math.min(1, 860 / size.w);
-  canvas.width = Math.round(size.w * scale);
-  canvas.height = Math.round(size.h * scale);
-  const off = document.createElement('canvas');
-  off.width = size.w;
-  off.height = size.h;
-  drawCover(off.getContext('2d'), size.w, size.h, state, images);
-  ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
-  const info = document.getElementById('panelInfo');
-  const p = state.panels[state.selected];
-  if (info && p) {
-    info.textContent = `Panel ${state.selected + 1} of ${state.panels.length} — ${p.label} (zoom ${p.zoom.toFixed(2)}×)`;
-  }
-  const ready = document.getElementById('readyLine');
-  if (ready) ready.textContent = `Ready — export at ${size.label}.`;
-}
+  const mast = document.createElement('header');
+  mast.className = 'gm-masthead';
+  mast.innerHTML =
+    '<span class="stars">★★★★★</span>' +
+    `<span class="tag">${GOLDEN_MILE_TAGLINE}</span>` +
+    `<span class="gazette">${GOLDEN_MILE_GAZETTE}</span>` +
+    '<span class="vol">VOL. 1</span>';
+  cover.appendChild(mast);
 
-// ---- photo tray -------------------------------------------------------
-
-function photoEntries() {
-  const v = variantById(state.variant);
-  const samples = v.panels.map((p) => ({ src: SAMPLE_DIR + p.file, name: p.file.replace('.jpg', ''), label: p.label, sample: true }));
-  return [...samples, ...userPhotos];
-}
-
-function renderTray() {
-  const tray = document.getElementById('photoTray');
-  if (!tray) return;
-  tray.innerHTML = '';
-  for (const entry of photoEntries()) {
-    const cell = document.createElement('button');
-    cell.className = 'tray-cell';
-    cell.type = 'button';
+  const grid = document.createElement('div');
+  grid.className = 'gm-grid';
+  state.panels.forEach((panel, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'gm-panel' + (panel.role === 'HERO' ? ' hero' : '') + (panel.role === 'THE BOSS' ? ' boss' : '');
+    if (i === selected) cell.classList.add('selected');
+    cell.dataset.index = String(i);
     const img = document.createElement('img');
-    img.src = entry.src;
-    img.alt = entry.name;
-    const cap = document.createElement('span');
-    cap.textContent = entry.label || entry.name;
-    cell.append(img, cap);
-    cell.addEventListener('click', () => {
-      placePhoto(entry.src, entry.label);
-    });
-    tray.appendChild(cell);
-  }
-  const count = document.getElementById('trayCount');
-  if (count) count.textContent = `Show all ${photoEntries().length} photos`;
-}
-
-function placePhoto(src, label) {
-  const p = state.panels[state.selected];
-  if (!p) return;
-  p.file = src.replace(SAMPLE_DIR, '');
-  if (src.startsWith('data:')) {
-    p.file = src;
-    p.custom = true;
-  }
-  p.zoom = 1;
-  p.ox = 0;
-  p.oy = 0;
-  if (label) p.label = label;
-  pushHistory();
-  render();
-}
-
-function addUserFiles(files) {
-  const list = [...files].filter((f) => f.type.startsWith('image/'));
-  if (!list.length) return;
-  let done = 0;
-  for (const f of list) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const src = reader.result;
-      images[src] = null;
-      const img = new Image();
-      img.onload = () => {
-        images[src] = img;
-        userPhotos.push({ src, name: f.name.replace(/\.[^.]+$/, ''), label: 'YOUR PHOTO', sample: false });
-        done += 1;
-        if (done === list.length) {
-          renderTray();
-          placePhoto(userPhotos[userPhotos.length - 1].src, 'YOUR PHOTO');
-        }
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(f);
-  }
-}
-
-// ---- variant / layout / grade ----------------------------------------
-
-function applyVariant(id) {
-  const v = variantById(id);
-  state.variant = v.id;
-  state.layout = v.layout;
-  state.grade = v.grade;
-  state.title = v.title;
-  state.script = v.script;
-  state.tagline = v.tagline;
-  state.quote = v.quote;
-  state.quoteSource = v.quoteSource;
-  state.panels = freshPanels(v, []);
-  state.selected = 0;
-  pushHistory();
-  syncAllControls();
-  renderTray();
-  render();
-}
-
-function buildButtons(containerId, items, activeId, onPick) {
-  const box = document.getElementById(containerId);
-  if (!box) return;
-  box.innerHTML = '';
-  for (const item of items) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'pick-btn' + (item.id === activeId ? ' active' : '');
-    b.textContent = item.name;
-    b.title = item.desc || item.name;
-    b.addEventListener('click', () => onPick(item.id));
-    box.appendChild(b);
-  }
-}
-
-function syncPickButtons() {
-  buildButtons('variantBtns', VARIANTS.map((v) => ({ id: v.id, name: v.name })), state.variant, applyVariant);
-  buildButtons('layoutBtns', Object.values(LAYOUTS).map((l) => ({ id: l.id, name: l.name, desc: l.desc })), state.layout, (id) => {
-    state.layout = id;
-    pushHistory();
-    syncPickButtons();
-    render();
-  });
-  buildButtons('gradeBtns', Object.values(GRADES).map((g) => ({ id: g.id, name: g.name })), state.grade, (id) => {
-    state.grade = id;
-    pushHistory();
-    syncPickButtons();
-    render();
-  });
-  buildButtons('sizeBtns', Object.values(SIZES).map((s) => ({ id: s.id, name: s.label })), state.size, (id) => {
-    state.size = id;
-    syncPickButtons();
-    render();
-  });
-}
-
-// ---- panel controls ----------------------------------------------------
-
-function panelButtons() {
-  const box = document.getElementById('panelDots');
-  if (!box) return;
-  box.innerHTML = '';
-  state.panels.forEach((p, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'panel-dot' + (i === state.selected ? ' active' : '');
-    b.textContent = String(i + 1);
-    b.addEventListener('click', () => {
-      state.selected = i;
-      panelButtons();
-      syncPanelControls();
-      render();
-    });
-    box.appendChild(b);
-  });
-}
-
-function syncPanelControls() {
-  const p = state.panels[state.selected];
-  const zoom = document.getElementById('zoomSlider');
-  if (zoom && p) zoom.value = String(Math.round(p.zoom * 100));
-  const tag = document.getElementById('nameTagChk');
-  if (tag) tag.checked = state.toggles.tags;
-}
-
-function allPanelRects() {
-  const size = currentSize();
-  const gap = Math.max(3, size.w * 0.004);
-  const bandH = Math.round(size.h * 0.21);
-  const quoteH = state.toggles.quote === false ? 0 : Math.round(size.h * 0.055);
-  const photoH = size.h - bandH - quoteH;
-  const isDiag = state.layout === 'diagonal';
-  const topH = isDiag ? photoH : Math.round(photoH * 0.56);
-  return panelRects(state.layout, { x: 0, y: 0, w: size.w, h: topH }, { x: 0, y: topH, w: size.w, h: photoH - topH }, gap, state.panels.length);
-}
-
-function selectedPanelRect() {
-  return allPanelRects()[state.selected];
-}
-
-function canvasPos(evt) {
-  const r = canvas.getBoundingClientRect();
-  return {
-    x: (evt.clientX - r.left) * (canvas.width / r.width),
-    y: (evt.clientY - r.top) * (canvas.height / r.height),
-  };
-}
-
-// ---- export ------------------------------------------------------------
-
-function exportPNG(sizeId) {
-  const size = SIZES[sizeId];
-  const off = document.createElement('canvas');
-  off.width = size.w;
-  off.height = size.h;
-  drawCover(off.getContext('2d'), size.w, size.h, { ...state, size: sizeId }, images);
-  off.toBlob((blob) => {
-    if (!blob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `sunreel-${state.variant}-${size.w}x${size.h}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }, 'image/png');
-}
-
-// ---- controls sync ------------------------------------------------------
-
-function syncAllControls() {
-  syncPickButtons();
-  panelButtons();
-  syncPanelControls();
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-  set('titleInput', state.title);
-  set('scriptInput', state.script);
-  set('taglineInput', state.tagline);
-  set('quoteInput', state.quote);
-  for (const [key, val] of Object.entries(state.sliders)) {
-    const el = document.getElementById('slider-' + key);
-    if (el) el.value = String(val);
-    const lab = document.getElementById('slider-' + key + '-val');
-    if (lab) lab.textContent = String(val);
-  }
-  for (const [key, val] of Object.entries(state.toggles)) {
-    const el = document.getElementById('toggle-' + key);
-    if (el) el.checked = !!val;
-  }
-}
-
-function bindControls() {
-  const bind = (id, fn, evt = 'input') => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener(evt, fn);
-  };
-  bind('titleInput', (e) => { state.title = e.target.value.toUpperCase(); render(); }, 'input');
-  bind('scriptInput', (e) => { state.script = e.target.value; render(); });
-  bind('taglineInput', (e) => { state.tagline = e.target.value.toUpperCase(); render(); });
-  bind('quoteInput', (e) => { state.quote = e.target.value; render(); });
-  bind('titleInput', () => pushHistory(), 'change');
-  bind('scriptInput', () => pushHistory(), 'change');
-
-  for (const key of Object.keys(state.sliders)) {
-    bind('slider-' + key, (e) => {
-      state.sliders[key] = Number(e.target.value);
-      const lab = document.getElementById('slider-' + key + '-val');
-      if (lab) lab.textContent = e.target.value;
-      render();
-    });
-  }
-  for (const key of Object.keys(state.toggles)) {
-    bind('toggle-' + key, (e) => {
-      state.toggles[key] = e.target.checked;
-      pushHistory();
-      render();
-    }, 'change');
-  }
-
-  bind('zoomSlider', (e) => {
-    const p = state.panels[state.selected];
-    if (p) { p.zoom = Number(e.target.value) / 100; render(); }
-  });
-  bind('zoomSlider', () => pushHistory(), 'change');
-
-  const act = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
-  act('flipBtn', () => { const p = state.panels[state.selected]; if (p) { p.flip = !p.flip; pushHistory(); render(); } });
-  act('swapBtn', () => {
-    const n = state.panels.length;
-    const a = state.selected;
-    const b = (a + 1) % n;
-    [state.panels[a], state.panels[b]] = [state.panels[b], state.panels[a]];
-    state.selected = b;
-    pushHistory();
-    panelButtons();
-    render();
-  });
-  act('resetPanelBtn', () => {
-    const p = state.panels[state.selected];
-    if (p) { p.zoom = 1; p.ox = 0; p.oy = 0; p.flip = false; pushHistory(); syncPanelControls(); render(); }
-  });
-  act('faceBtn', () => {
-    const p = state.panels[state.selected];
-    if (p) { p.zoom = 1; p.ox = 0; p.oy = -0.15; pushHistory(); render(); }
-  });
-  act('replaceBtn', () => { const f = document.getElementById('fileInput'); if (f) f.click(); });
-  act('clearPanelBtn', () => {
-    const p = state.panels[state.selected];
-    if (p) { p.file = ''; pushHistory(); render(); }
-  });
-  act('nameTagChk', (e) => { state.toggles.tags = e.target.checked; render(); }, 'change');
-  act('undoBtn', undo);
-  act('redoBtn', redo);
-  act('autoLayoutBtn', () => {
-    const layouts = Object.keys(LAYOUTS);
-    state.layout = layouts[Math.floor(Math.random() * layouts.length)];
-    pushHistory();
-    syncPickButtons();
-    render();
-  });
-  act('surpriseBtn', () => {
-    const v = VARIANTS[Math.floor(Math.random() * VARIANTS.length)];
-    applyVariant(v.id);
-  });
-  act('sampleBtn', () => applyVariant('vice'));
-  act('onePhotoBtn', () => {
-    const first = state.panels[0] ? state.panels[0].file : '';
-    for (const p of state.panels) p.file = first;
-    pushHistory();
-    render();
-  });
-  act('exportAllBtn', () => { exportPNG('square'); exportPNG('portrait'); exportPNG('landscape'); });
-  act('exportCurrentBtn', () => exportPNG(state.size));
-  for (const sizeId of Object.keys(SIZES)) {
-    act('export-' + sizeId, () => exportPNG(sizeId));
-  }
-
-  const fileInput = document.getElementById('fileInput');
-  if (fileInput) fileInput.addEventListener('change', (e) => { addUserFiles(e.target.files); e.target.value = ''; });
-  const drop = document.getElementById('dropZone');
-  if (drop) {
-    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag'); });
-    drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
-    drop.addEventListener('drop', (e) => {
-      e.preventDefault();
-      drop.classList.remove('drag');
-      addUserFiles(e.dataTransfer.files);
-    });
-    drop.addEventListener('click', () => { if (fileInput) fileInput.click(); });
-  }
-  document.addEventListener('paste', (e) => {
-    const files = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith('image/'));
-    if (files.length) addUserFiles(files);
-  });
-
-  let dragging = false;
-  let last = null;
-  canvas.addEventListener('pointerdown', (e) => {
-    const pos = canvasPos(e);
-    const size = currentSize();
-    const scale = canvas.width / size.w;
-    const rects = allPanelRects();
-    const px = pos.x / scale;
-    const py = pos.y / scale;
-    const idx = rects.findIndex((r) => px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h);
-    if (idx >= 0) {
-      state.selected = idx;
-      panelButtons();
-      syncPanelControls();
-      render();
+    img.src = panel.src;
+    img.alt = panel.role;
+    img.draggable = false;
+    img.style.objectPosition = `${panel.fx * 100}% ${panel.fy * 100}%`;
+    if (panel.flip) img.style.transform = 'scaleX(-1)';
+    if (panel.zoom && panel.zoom !== 1) {
+      img.style.width = `${panel.zoom * 100}%`;
+      img.style.height = `${panel.zoom * 100}%`;
+      img.style.maxWidth = 'none';
+      img.style.maxHeight = 'none';
+      img.style.left = `${(1 - panel.zoom) * 50}%`;
+      img.style.top = `${(1 - panel.zoom) * 50}%`;
     }
-    dragging = true;
-    last = pos;
-    canvas.setPointerCapture(e.pointerId);
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (!dragging || !last) return;
-    const pos = canvasPos(e);
-    const p = state.panels[state.selected];
-    if (p) {
-      p.ox += (pos.x - last.x) / canvas.width * 2;
-      p.oy += (pos.y - last.y) / canvas.height * 2;
-      render();
+    cell.appendChild(img);
+    const wash = document.createElement('div');
+    wash.className = 'wash';
+    cell.appendChild(wash);
+    if (panel.role !== 'HERO') {
+      const role = document.createElement('span');
+      role.className = 'role';
+      role.textContent = panel.role;
+      cell.appendChild(role);
     }
-    last = pos;
+    cell.addEventListener('pointerdown', (ev) => startGoldenMileDrag(ev, i, cell));
+    grid.appendChild(cell);
   });
-  canvas.addEventListener('pointerup', () => { if (dragging) pushHistory(); dragging = false; last = null; });
-  canvas.addEventListener('wheel', (e) => {
+  cover.appendChild(grid);
+
+  const band = document.createElement('div');
+  band.className = 'gm-titleband';
+  const title = document.createElement('h1');
+  title.className = 'gm-title';
+  title.textContent = state.title;
+  band.appendChild(title);
+  const script = document.createElement('p');
+  script.className = 'gm-script';
+  script.textContent = state.script;
+  band.appendChild(script);
+  const ribbon = document.createElement('p');
+  ribbon.className = 'gm-ribbon';
+  ribbon.textContent = state.ribbon;
+  band.appendChild(ribbon);
+  cover.appendChild(band);
+
+  const foot = document.createElement('footer');
+  foot.className = 'gm-foot';
+  foot.innerHTML =
+    '<span class="soon">—&nbsp; COMING SOON &nbsp;—</span>' +
+    `<span class="credits">${GOLDEN_MILE_CREDITS}</span>` +
+    '<span class="gm-barcode" aria-hidden="true"></span>';
+  cover.appendChild(foot);
+
+  const seal = document.createElement('div');
+  seal.className = 'gm-seal';
+  seal.innerHTML = '★ BEST ★<br>SELLER';
+  cover.appendChild(seal);
+
+  return cover;
+}
+
+function renderGoldenMile() {
+  coverMount.replaceChildren(buildGoldenMileCoverEl());
+  if (document.body.classList.contains('shot-cover')) {
+    shotWrap.replaceChildren(buildGoldenMileCoverEl());
+  }
+  const hint = $('panelHint');
+  if (hint) {
+    const p = state.panels[selected];
+    hint.textContent = `Selected: ${p.role} — ${p.src.split('/').pop()}. Drag the photo to move it, scroll to zoom.`;
+  }
+  document.querySelectorAll('#gradeList .gm-chip').forEach((chip) => {
+    chip.classList.toggle('on', chip.dataset.grade === state.grade);
+  });
+  document.querySelectorAll('#sizeList .gm-chip').forEach((chip) => {
+    chip.classList.toggle('on', chip.dataset.size === state.size);
+  });
+}
+
+// ---- Panel interaction: drag to pan, wheel to zoom ----------------------
+
+function startGoldenMileDrag(ev, index, cell) {
+  ev.preventDefault();
+  selected = index;
+  document.querySelectorAll('.gm-panel').forEach((el, i) => {
+    el.classList.toggle('selected', i === index);
+  });
+  const hint = $('panelHint');
+  if (hint) {
+    const p = state.panels[selected];
+    hint.textContent = `Selected: ${p.role} — ${p.src.split('/').pop()}. Drag the photo to move it, scroll to zoom.`;
+  }
+  const panel = state.panels[index];
+  const img = cell.querySelector('img');
+  const startX = ev.clientX;
+  const startY = ev.clientY;
+  const startFx = panel.fx;
+  const startFy = panel.fy;
+  const rect = cell.getBoundingClientRect();
+  function move(e2) {
+    panel.fx = Math.min(1, Math.max(0, startFx - (e2.clientX - startX) / rect.width));
+    panel.fy = Math.min(1, Math.max(0, startFy - (e2.clientY - startY) / rect.height));
+    img.style.objectPosition = `${panel.fx * 100}% ${panel.fy * 100}%`;
+  }
+  function up() {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    renderGoldenMile();
+  }
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+
+function attachGoldenMileWheel() {
+  coverMount.addEventListener(
+    'wheel',
+    (ev) => {
+      const cell = ev.target.closest('.gm-panel');
+      if (!cell) return;
+      ev.preventDefault();
+      const panel = state.panels[Number(cell.dataset.index)];
+      panel.zoom = Math.min(2.5, Math.max(1, (panel.zoom || 1) * (ev.deltaY < 0 ? 1.12 : 0.9)));
+      renderGoldenMile();
+    },
+    { passive: false },
+  );
+}
+
+// ---- Controls -----------------------------------------------------------
+
+function buildGoldenMileControls() {
+  const gradeList = $('gradeList');
+  for (const id of GOLDEN_MILE_GRADE_IDS) {
+    const grade = GOLDEN_MILE_GRADES[id];
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'gm-chip';
+    chip.dataset.grade = id;
+    chip.innerHTML =
+      `<span class="dot" style="background:${GOLDEN_MILE_GRADE_SWATCH[id]}"></span>` +
+      `<span style="flex:1">${grade.label}</span><small>grade</small>`;
+    chip.addEventListener('click', () => {
+      state.grade = id;
+      renderGoldenMile();
+    });
+    gradeList.appendChild(chip);
+  }
+  const sizeList = $('sizeList');
+  for (const [id, size] of Object.entries(GOLDEN_MILE_SIZES)) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'gm-chip';
+    chip.dataset.size = id;
+    chip.innerHTML = `<span style="flex:1">${size.label}</span><small>export</small>`;
+    chip.addEventListener('click', () => {
+      state.size = id;
+      renderGoldenMile();
+    });
+    sizeList.appendChild(chip);
+  }
+}
+
+function buildGoldenMileSamples() {
+  const strip = $('sampleStrip');
+  for (const file of GOLDEN_MILE_SAMPLES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'gm-sample';
+    btn.title = file;
+    const img = document.createElement('img');
+    img.src = 'samples/' + file;
+    img.alt = file;
+    img.loading = 'lazy';
+    btn.appendChild(img);
+    const tag = document.createElement('span');
+    tag.textContent = file.replace('.jpg', '');
+    btn.appendChild(tag);
+    btn.addEventListener('click', async () => {
+      const panel = state.panels[selected];
+      panel.src = 'samples/' + file;
+      const known = GOLDEN_MILE_SAMPLES.indexOf(file);
+      await loadImage(panel.src);
+      renderGoldenMile();
+      refreshGoldenMileSampleMarks();
+    });
+    strip.appendChild(btn);
+  }
+  refreshGoldenMileSampleMarks();
+}
+
+function refreshGoldenMileSampleMarks() {
+  const used = new Set(state.panels.map((p) => p.src.split('/').pop()));
+  document.querySelectorAll('#sampleStrip .gm-sample').forEach((btn) => {
+    btn.classList.toggle('used', used.has(btn.title));
+  });
+}
+
+function addGoldenMileUserPhoto(file) {
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const src = String(reader.result);
+    userPhotos.push(src);
+    const panel = state.panels[selected];
+    panel.src = src;
+    panel.fx = 0.5;
+    panel.fy = 0.4;
+    panel.zoom = 1;
+    images[src] = await loadImage(src);
+    renderGoldenMile();
+  };
+  reader.readAsDataURL(file);
+}
+
+function wireGoldenMileControls() {
+  $('titleInput').addEventListener('input', (e) => {
+    state.title = e.target.value.toUpperCase() || GOLDEN_MILE_TITLE;
+    renderGoldenMile();
+  });
+  $('scriptInput').addEventListener('input', (e) => {
+    state.script = e.target.value || GOLDEN_MILE_SCRIPT;
+    renderGoldenMile();
+  });
+  $('ribbonInput').addEventListener('input', (e) => {
+    state.ribbon = e.target.value.toUpperCase() || GOLDEN_MILE_RIBBON;
+    renderGoldenMile();
+  });
+  $('flipBtn').addEventListener('click', () => {
+    const p = state.panels[selected];
+    p.flip = !p.flip;
+    renderGoldenMile();
+  });
+  $('faceBtn').addEventListener('click', () => {
+    const p = state.panels[selected];
+    p.fx = 0.5;
+    p.fy = 0.35;
+    p.zoom = 1;
+    renderGoldenMile();
+  });
+  $('swapBtn').addEventListener('click', () => {
+    const next = (selected + 1) % state.panels.length;
+    const a = state.panels[selected];
+    const b = state.panels[next];
+    [a.src, b.src] = [b.src, a.src];
+    [a.fx, b.fx] = [b.fx, a.fx];
+    [a.fy, b.fy] = [b.fy, a.fy];
+    selected = next;
+    renderGoldenMile();
+    refreshGoldenMileSampleMarks();
+  });
+  $('resetBtn').addEventListener('click', () => {
+    const fresh = goldenMileDefaultState().panels[selected];
+    state.panels[selected] = { ...fresh };
+    renderGoldenMile();
+    refreshGoldenMileSampleMarks();
+  });
+  $('addPhotosBtn').addEventListener('click', () => $('fileInput').click());
+  $('fileInput').addEventListener('change', (e) => {
+    for (const f of e.target.files) addGoldenMileUserPhoto(f);
+    e.target.value = '';
+  });
+  const drop = $('dropZone');
+  drop.addEventListener('dragover', (e) => {
     e.preventDefault();
-    const p = state.panels[state.selected];
-    if (!p) return;
-    p.zoom = Math.max(0.5, Math.min(3, p.zoom * (e.deltaY < 0 ? 1.08 : 0.92)));
-    syncPanelControls();
-    render();
-  }, { passive: false });
-  canvas.addEventListener('dblclick', () => {
-    const p = state.panels[state.selected];
-    if (p) { p.zoom = 1; p.ox = 0; p.oy = 0; pushHistory(); syncPanelControls(); render(); }
+    drop.classList.add('over');
   });
-}
-
-// ---- boot ---------------------------------------------------------------
-
-async function boot() {
-  if (query.shot === 'cover') {
-    document.body.classList.add('cover-only');
-    const v = variantById(query.variant);
-    state.variant = v.id;
-    state.layout = v.layout;
-    state.grade = query.grade || v.grade;
-    state.title = query.caption || v.title;
-    state.script = query.subcaption || v.script;
-    state.tagline = v.tagline;
-    state.quote = v.quote;
-    state.quoteSource = v.quoteSource;
-    state.panels = freshPanels(v, query.panels);
-    await preloadVariant();
-    try {
-      await Promise.all([
-        document.fonts.load('40px "Anton"'),
-        document.fonts.load('40px "Archivo Black"'),
-        document.fonts.load('40px "Bebas Neue"'),
-      ]);
-    } catch { /* fonts fall back to system sans */ }
-    await document.fonts.ready;
-    const size = currentSize();
-    canvas.width = size.w;
-    canvas.height = size.h;
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.style.objectFit = 'contain';
-    drawCover(ctx, size.w, size.h, state, images);
-    return;
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('over');
+    for (const f of e.dataTransfer.files) addGoldenMileUserPhoto(f);
+  });
+  window.addEventListener('paste', (e) => {
+    for (const item of e.clipboardData?.items || []) {
+      if (item.type.startsWith('image/')) addGoldenMileUserPhoto(item.getAsFile());
+    }
+  });
+  const exporters = [
+    ['exportSquareBtn', 'square'],
+    ['exportPortraitBtn', 'portrait'],
+    ['exportWideBtn', 'landscape'],
+  ];
+  for (const [id, sizeId] of exporters) {
+    $(id).addEventListener('click', async () => {
+      const btn = $(id);
+      btn.disabled = true;
+      btn.textContent = 'Rendering…';
+      try {
+        await loadAllPanelImages();
+        const blob = await exportGoldenMilePng(state, images, sizeId);
+        const size = GOLDEN_MILE_SIZES[sizeId];
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `vice-pursuit-${size.width}x${size.height}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = `⬇ PNG ${GOLDEN_MILE_SIZES[sizeId].width} × ${GOLDEN_MILE_SIZES[sizeId].height}`;
+      }
+    });
   }
-  bindControls();
-  syncAllControls();
-  await preloadVariant();
-  try {
-    await Promise.all([
-      document.fonts.load('40px "Anton"'),
-      document.fonts.load('40px "Archivo Black"'),
-      document.fonts.load('40px "Bebas Neue"'),
-    ]);
-  } catch { /* fonts fall back to system sans */ }
-  pushHistory();
-  renderTray();
-  render();
 }
 
-boot();
+// ---- Boot ---------------------------------------------------------------
+
+async function bootGoldenMile() {
+  if (query.shot === 'cover') {
+    document.body.classList.add('shot-cover');
+    document.title = 'VICE PURSUIT — cover';
+  }
+  buildGoldenMileControls();
+  buildGoldenMileSamples();
+  wireGoldenMileControls();
+  attachGoldenMileWheel();
+  await loadAllPanelImages();
+  await document.fonts.ready;
+  renderGoldenMile();
+  // Keep the canvas renderer honest: it must be able to draw the same
+  // cover the DOM shows, so warm its image cache too.
+  if (query.shot === 'cover') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    drawGoldenMileCover(canvas.getContext('2d'), state, images, 32, 32);
+  }
+}
+
+bootGoldenMile();

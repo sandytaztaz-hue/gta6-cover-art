@@ -351,10 +351,25 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
-  // Pink script subhead.
-  ctx.fillStyle = '#ff8fc7';
-  ctx.font = `italic ${bandH * 0.24}px ${SCRIPT_FONT}`;
-  ctx.fillText(state.script, W / 2, bandY + titleSize * 0.95 + bandH * 0.12);
+  // Pink script subhead, Palmline style: big, white-outlined, slanted,
+  // overlapping the bottom of the title.
+  const scriptSize = bandH * 0.38;
+  const scriptY = bandY + titleSize * 0.9;
+  ctx.save();
+  ctx.translate(W / 2, scriptY);
+  ctx.transform(1, 0, -0.14, 1, 0, 0);
+  ctx.font = `italic ${scriptSize}px ${SCRIPT_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+  ctx.shadowBlur = scriptSize * 0.08;
+  ctx.shadowOffsetY = scriptSize * 0.03;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = scriptSize * 0.1;
+  ctx.strokeText(state.script, 0, 0);
+  ctx.fillStyle = '#ff5fa8';
+  ctx.fillText(state.script, 0, 0);
+  ctx.restore();
   // Ribbon line.
   ctx.font = `${bandH * 0.115}px ${LABEL_FONT}`;
   const ribbonText = state.ribbon;

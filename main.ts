@@ -1,4 +1,8 @@
-// SUNREEL — poster cover studio (rebuild r11, entry program, Node 22 stdlib only).
+// SUNREEL — poster cover studio (rebuild r12, entry program, Node 22 stdlib only).
+//
+// r12: three photo swaps only — CITY OF CRIME's LOOKOUT is re-cast as a
+// tattooed gangster man, AFTER DARK's MARKET and DRIVER are re-shot as
+// a neon street party and a mid-chase driver. Everything else is r11.
 //
 // The app is this directory's app/ folder: plain static files a desktop
 // browser loads offline (app/index.html and its ES modules, no library, no
@@ -18,7 +22,7 @@
 // at 1080×1080, 1080×1350 and 1920×1080. The big wanted-stars pill is
 // OFF by default on every variant — it does not exist in the reference,
 // and the HEAT pill reads ★★★★☆ (four filled, one empty) with five
-// small stars on the quote strip only. Its thirty-four sample photos
+// small stars on the quote strip only. Its thirty-seven sample photos
 // (app/samples/) are real photographs made in this session — V1's five
 // (the sunny palm boulevard chase with orange supercar + sport bike and
 // police behind, the neon night driver, the rainy downtown fixer, the
@@ -27,8 +31,11 @@
 // a yellow tunnel chase, a blue coupe on a wet boulevard, a night
 // market, a truck woman at a gas station, a police helicopter
 // searchlight, a vintage green pickup, a drive-in diner, a motel bike,
-// a skater at sunset, a speedboat at dusk and a skyline overlook) and
-// the sixteen older samples.
+// a skater at sunset, a speedboat at dusk and a skyline overlook) plus
+// the three r12 replacements (a tattooed gangster lookout in a neon
+// alley, a chase driver gripping the wheel mid high-speed chase, a neon
+// boulevard street party with lowriders) and the sixteen older samples.
+// The three r11 photos the r12 shots replace stay on disk, unreferenced.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:

@@ -1,4 +1,12 @@
-// SUNREEL — deterministic screenshot states (rebuild r11, poster studio edition).
+// SUNREEL — deterministic screenshot states (rebuild r12, poster studio edition).
+//
+// r12: the same four shots as r11, re-rendered fresh. Shot 3 (CITY OF
+// CRIME portrait) now shows the re-cast LOOKOUT — the tattooed gangster
+// man in the neon alley. Shot 4 (AFTER DARK square) now shows the two
+// re-shot middle panels — the neon street party (THE MARKET) and the
+// chase driver (THE DRIVER). Shots 1 (VICE PURSUIT) and 2 (editor with
+// MIDNIGHT RUNNERS) are unchanged in content and re-rendered from the
+// same states.
 //
 // ?shot=cover   the cover alone, full-bleed: the app renders the PNG it
 //               would export at full resolution, shows that PNG, and sets
@@ -19,6 +27,13 @@
 // viewport (1440×1000) so the left, centre and right columns all fit in
 // one frame. The big wanted-stars pill defaults to OFF on every variant
 // — no shot passes &stars= any more.
+//
+// r12: the same four shots, re-rendered fresh in-session. The crime
+// shot's middle panel is the new tattooed gangster LOOKOUT (tall
+// portrait photo, +0.10 smart crop keeps the whole face in frame); the
+// dark shot's middle panels are the new street party and chase driver
+// (wide photos, centre / +0.04 crops). Nothing else about the shots
+// changes — same variants, grades, sizes, captions and panel counts.
 
 import { SIZES, renderCover, loadImage, fontsReady, VARIANTS } from './cover.js';
 import { bootEditor, applyParams, loadSamples, state, SAMPLES, SMART_CROPS } from './main.js';

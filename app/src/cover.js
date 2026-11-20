@@ -46,8 +46,8 @@ export const SIZES = {
 
 export const LAYOUTS = {
   sunset: { label: 'Sunset Chase', panels: 5, hint: 'Hero chase wide top-left, driver top-right, fixer / getaway / wildcard below' },
-  crime: { label: 'Diagonal trio', panels: 3, hint: 'Three diagonal panels — insider, lookout, getaway' },
-  dark: { label: 'Hero + three', panels: 4, hint: 'Blue coupe hero on top, market / truck / helicopter below' },
+  crime: { label: 'Diagonal trio', panels: 3, hint: 'Three diagonal panels — insider, tattooed lookout, getaway' },
+  dark: { label: 'Hero + three', panels: 4, hint: 'Blue coupe hero on top, street party / chase driver / helicopter below' },
   runners: { label: 'Six grid', panels: 6, hint: 'Two rows of three — pickup, diner, bike, skater, boat, skyline' },
   'hero-mosaic': { label: 'Hero mosaic', panels: 6, hint: 'One big hero panel left, five small panels stacked right' },
   'hero-three': { label: 'Hero + three', panels: 4, hint: 'One big hero panel on top, three small panels below' },
@@ -96,6 +96,15 @@ export const VARIANTS = {
     panels: ['chase', 'driver-new', 'rain', 'canyon', 'everglades'],
     strip: 'ONE COASTLINE · FIVE STORIES · NO CURFEW',
   },
+  // r12 — CITY OF CRIME re-cast: THE LOOKOUT is no longer the r11
+  // fire-escape lookout (young woman with curly hair). The middle panel
+  // is now the tattooed gangster man — full sleeves, neck and face
+  // tattoos, leather jacket, gold chain, stern stare in a rainy neon
+  // alley — a face the city would not forget. Same key
+  // ('crime-lookout'), same panel order, same title / script / tagline /
+  // HEAT ★★★★☆ / Diagonal trio layout: only the photograph changes.
+  // THE INSIDER (rainy alley, older man) and THE GETAWAY (yellow tunnel
+  // chase) are untouched r11 photos, reused by reference.
   crime: {
     label: 'City of Crime', layout: 'diagonal', grade: 'neon',
     title: 'CITY OF CRIME', script: 'Streets never sleep', tagline: 'THREE FACES · ONE LONG NIGHT',
@@ -103,11 +112,21 @@ export const VARIANTS = {
     panels: ['crime-insider', 'crime-lookout', 'crime-tunnel'],
     strip: 'THREE FACES · THREE STORIES · NO WAY OUT',
   },
+  // r12 — AFTER DARK re-shot: Sand called the r11 market and driver
+  // panels "terlalu lebay" (too over-the-top / stiff, posed portraits),
+  // so both middle panels are new live moments. THE MARKET is now a
+  // high-energy neon boulevard car meet — crowd, lowriders, sports cars,
+  // confetti ('dark-street'); THE DRIVER is now a driver gripping the
+  // wheel mid high-speed chase, neon streaking past ('dark-driver').
+  // The old keys ('dark-nightmarket', 'dark-truckwoman') are retired.
+  // Same title / script / tagline / HEAT ★★★★☆ / Hero + three layout
+  // and the same 4-photo count. THE RIDE (blue coupe hero) and THE SKY
+  // (police helicopter searchlight) are untouched r11 photos.
   dark: {
     label: 'After Dark', layout: 'hero-three', grade: 'ultraviolet',
     title: 'AFTER DARK', script: 'City of lights', tagline: 'FOUR NIGHTS · ONE CITY',
     quote: 'BRIGHTER AFTER MIDNIGHT', quoteSource: 'THE PALM GAZETTE',
-    panels: ['dark-bluecoupe', 'dark-nightmarket', 'dark-truckwoman', 'dark-helicopter'],
+    panels: ['dark-bluecoupe', 'dark-street', 'dark-driver', 'dark-helicopter'],
     strip: 'ONE CITY · FOUR STORIES · LIGHTS NEVER OFF',
   },
   runners: {
@@ -987,6 +1006,9 @@ function halftone(ctx, W, H, amount) {
 // One row per panel: the yellow role pill's text. V1 keeps its r10 roles
 // exactly. The three new variants get their own roles; the editor-only
 // layouts fall back to the generic list by panel index.
+// r12 keeps every role label: THE LOOKOUT now names the tattooed
+// gangster, THE MARKET names the neon street party, THE DRIVER names
+// the chase driver — same pills, new photographs underneath.
 const PANEL_META = {
   sunset: [
     { role: 'THE RIDE' }, { role: 'THE DRIVER' }, { role: 'THE FIXER' },
@@ -1020,7 +1042,9 @@ const GENERIC_ROLES = ['THE HERO', 'THE CREW', 'THE RIDE', 'THE NIGHT', 'THE CIT
 
 /** Yellow role pills for each panel: bottom-left, exactly like the
  *  reference. The pill is small and low: on the DRIVER panels it sits
- *  over her jacket, never over her face. */
+ *  over the jacket / dashboard, never over a face; on the r12 LOOKOUT
+ *  panel it sits over the leather jacket at the bottom of the frame,
+ *  well below the gangster's chin, so his face stays fully clear. */
 function drawPanelFurniture(ctx, state, panels, W, H) {
   panels.forEach((panel, i) => {
     if (panel.w < W * 0.15 || panel.h < H * 0.12) return;

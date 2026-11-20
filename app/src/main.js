@@ -295,12 +295,30 @@ export const SAMPLES = {
   'sunset-duo': { file: 'samples/media-generation-sunset-duo-0-7f9f1cb0-4aea-484d-91d5-b31bc29942f7.jpg', name: 'Sunset duo', label: 'Modern supercar + classic muscle car racing side by side at sunset' },
   // r11 — CITY OF CRIME (Diagonal trio)
   'crime-insider': { file: 'samples/media-generation-crime-insider-0-de10d04b-e4b4-4e49-9902-65951957155f.jpg', name: 'The insider', label: 'Rainy downtown alley at night — older man in a grey suit, neon bar signs, whole head in frame' },
-  'crime-lookout': { file: 'samples/media-generation-crime-lookout-0-e0d712e4-47b5-486c-81b0-6e588ddd9cb3.jpg', name: 'The lookout', label: 'Fire-escape balcony at dusk — young woman with dark curly hair, city skyline, whole head in frame' },
+  // r12 — THE LOOKOUT is re-cast: the r11 fire-escape lookout (young woman
+  // with curly hair) is replaced by a menacing tattooed gangster man —
+  // full tattoo sleeves, neck and face tattoos, leather jacket, gold
+  // chain, stern expression, dark neon alley in the rain. Portrait
+  // 1120×2240, face in the upper half with clear sky above the hair, so
+  // the whole head stays in frame and the THE LOOKOUT pill never covers
+  // it. The r11 file stays on disk, unreferenced.
+  'crime-lookout': { file: 'samples/media-generation-media-generation-crime-lookout-0-c1113d89-0c15-4907-9ca2-4c80dbdba162.webp', name: 'The lookout', label: 'Neon alley at night — tattooed gangster man, full sleeves, neck and face tattoos, leather jacket, gold chain, stern stare, whole face in frame' },
   'crime-tunnel': { file: 'samples/media-generation-crime-tunnel-0-dca6641c-b4a3-45a5-b95c-ec0acfb40b16.jpg', name: 'Tunnel chase', label: 'Yellow sports car speeding through a highway tunnel at night, motion blur' },
   // r11 — AFTER DARK (Hero + three)
   'dark-bluecoupe': { file: 'samples/media-generation-dark-bluecoupe-0-a4a5a0ea-2b42-404b-a8ba-e5cb69fe023f.jpg', name: 'Blue coupe', label: 'Deep blue coupe on a wet boulevard at night, palm silhouettes, neon reflections' },
-  'dark-nightmarket': { file: 'samples/media-generation-dark-nightmarket-0-982c22c9-49e1-484f-8486-56177e26d07a.jpg', name: 'Night market', label: 'Night market food stall — man grilling skewers, lanterns and neon' },
-  'dark-truckwoman': { file: 'samples/media-generation-dark-truckwoman-0-45807eeb-f347-4c0c-95dc-61d5a8760b91.jpg', name: 'Truck woman', label: 'Gas station at night — woman with short black hair in a leather jacket leaning on a vintage green pickup, whole head in frame' },
+  // r12 — AFTER DARK's two middle panels are re-shot: Sand called the r11
+  // night market and truck woman "terlalu lebay" (too over-the-top /
+  // stiff, posed), so both are replaced with live, exciting moments.
+  // THE MARKET is now a high-energy Vice City street party — a neon
+  // boulevard packed with a cheering crowd, lowriders and sports cars
+  // under pink neon, confetti in the air. THE DRIVER is now a dynamic
+  // action shot — a driver gripping the wheel mid high-speed chase at
+  // night, neon streaks blurring past the windows, face fully in frame.
+  // The r11 keys ('dark-nightmarket', 'dark-truckwoman') are retired;
+  // their files stay on disk, unreferenced. THE RIDE (blue coupe hero)
+  // and THE SKY (police helicopter) are untouched.
+  'dark-street': { file: 'samples/media-generation-media-generation-dark-street-r-0-821950e7-99a0-43b2-accf-3b05ac42262f.webp', name: 'Street party', label: 'Neon boulevard car meet at night — crowd cheering, lowriders and sports cars, pink neon, confetti, wet asphalt' },
+  'dark-driver': { file: 'samples/media-generation-media-generation-dark-driver-r-0-115eae96-35ed-4ee0-a9f4-e20f057cb49b.webp', name: 'Chase driver', label: 'Driver gripping the wheel mid high-speed chase at night — neon streaks past the windows, face fully in frame' },
   'dark-helicopter': { file: 'samples/media-generation-dark-helicopter-0-8dd4bdad-9982-4333-be07-049aa76316c4.jpg', name: 'Searchlight', label: 'Police helicopter searchlight sweeping over a suspension bridge at night' },
   // r11 — MIDNIGHT RUNNERS (Six grid)
   'runners-pickup': { file: 'samples/media-generation-runners-pickup-0-9fb9d3e3-4b89-4ba5-b077-ef1a159f86c1.jpg', name: 'Green pickup', label: 'Vintage green pickup on a desert highway at golden hour, dust trailing' },
@@ -310,16 +328,21 @@ export const SAMPLES = {
   'runners-speedboat': { file: 'samples/media-generation-runners-speedboat-0-ac12628a-24b0-4a52-8956-dd91a43ca3df.jpg', name: 'Speedboat', label: 'White speedboat racing across a bay at dusk, purple-orange sky' },
   'runners-skyline': { file: 'samples/media-generation-runners-skyline-0-6e685994-a9e8-47da-937e-80a46bc06e6c.jpg', name: 'The overlook', label: 'City skyline from a hilltop at blue hour, red sedan in the foreground' },
 };
-export const SAMPLE_ORDER = ['crime-insider', 'crime-lookout', 'crime-tunnel', 'dark-bluecoupe', 'dark-nightmarket', 'dark-truckwoman', 'dark-helicopter', 'runners-pickup', 'runners-diner', 'runners-motelbike', 'runners-skatewoman', 'runners-speedboat', 'runners-skyline', 'chase', 'driver-new', 'rain', 'canyon', 'everglades', 'strip', 'driver2', 'rooftop', 'palm-night', 'classic-muscle', 'coast', 'beach', 'pier', 'vintage-caddy', 'modern-sunset', 'sunset-duo', 'biker', 'garage', 'harbor', 'desert', 'neon'];
+export const SAMPLE_ORDER = ['crime-insider', 'crime-lookout', 'crime-tunnel', 'dark-bluecoupe', 'dark-street', 'dark-driver', 'dark-helicopter', 'runners-pickup', 'runners-diner', 'runners-motelbike', 'runners-skatewoman', 'runners-speedboat', 'runners-skyline', 'chase', 'driver-new', 'rain', 'canyon', 'everglades', 'strip', 'driver2', 'rooftop', 'palm-night', 'classic-muscle', 'coast', 'beach', 'pier', 'vintage-caddy', 'modern-sunset', 'sunset-duo', 'biker', 'garage', 'harbor', 'desert', 'neon'];
 
 /** Smart crops: per-scene focus offsets, so each sample lands with its
- *  hero in frame instead of a blind centre crop. The r11 portrait
- *  photos (lookout, truck woman, skater, diner, insider) are framed
- *  from mid-torso up with clear sky above the hair — their offsets pull
- *  the window UP (positive oy moves the photo down in its panel,
- *  showing more of the top), so the whole head stays in frame and is
- *  never cropped. The canyon and Everglades crops pull down hard to
- *  keep their low heroes in frame. */
+ *  hero in frame instead of a blind centre crop. The portrait photos
+ *  (lookout, skater, diner, insider) are framed from mid-torso up with
+ *  clear sky above the hair — their offsets pull the window UP (positive
+ *  oy moves the photo down in its panel, showing more of the top), so
+ *  the whole head stays in frame and is never cropped. The r12 lookout
+ *  is a tall portrait (1120×2240) with the face in the upper half, so
+ *  its +0.10 offset keeps the forehead and the gold chain in frame on
+ *  the short diagonal panel. The r12 driver is a wide chase shot framed
+ *  on the wheel and the face, so a small +0.04 keeps both in frame; the
+ *  r12 street party is a wide crowd scene that crops clean from the
+ *  centre. The canyon and Everglades crops pull down hard to keep
+ *  their low heroes in frame. */
 export const SMART_CROPS = {
   chase: { ox: 0, oy: -0.04 },
   neon: { ox: 0.06, oy: 0 },
@@ -346,8 +369,8 @@ export const SMART_CROPS = {
   'crime-lookout': { ox: 0, oy: 0.10 },
   'crime-tunnel': { ox: 0, oy: -0.02 },
   'dark-bluecoupe': { ox: 0, oy: -0.04 },
-  'dark-nightmarket': { ox: 0, oy: 0 },
-  'dark-truckwoman': { ox: 0, oy: 0.10 },
+  'dark-street': { ox: 0, oy: 0 },
+  'dark-driver': { ox: 0, oy: 0.04 },
   'dark-helicopter': { ox: 0, oy: -0.04 },
   'runners-pickup': { ox: 0, oy: -0.05 },
   'runners-diner': { ox: 0, oy: 0.08 },

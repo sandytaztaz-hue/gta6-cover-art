@@ -154,8 +154,9 @@ export function goldenMileLayout(sizeId) {
     },
     // The title band sits low on the hero's chest, below the chin, so
     // the lettering never covers a face; it overlaps only the bottom
-    // row of panels, magazine-style.
-    titleBand: { x: 0, y: wide ? 0.54 : tall ? 0.58 : 0.57, w: 1, h: 0.24 },
+    // row of panels, magazine-style. r15f: lowered a touch (Sand 08:42)
+    // so the title clears the hero's chin/jaw with daylight to spare.
+    titleBand: { x: 0, y: wide ? 0.585 : tall ? 0.625 : 0.615, w: 1, h: 0.24 },
     foot: { x: 0, y: wide ? 0.93 : tall ? 0.942 : 0.928, w: 1, h: 0.072 },
     seal: { x: 0.885, y: wide ? 0.8 : tall ? 0.845 : 0.815, r: wide ? 0.048 : 0.055 },
   };
@@ -181,7 +182,7 @@ export function goldenMileCellRect(layout, W, H, role) {
 
 const TITLE_FONT = '"Anton", "Archivo Black", sans-serif';
 const LABEL_FONT = '"Archivo Black", sans-serif';
-const SCRIPT_FONT = '"Segoe Script", "Snell Roundhand", cursive';
+const SCRIPT_FONT = '"Great Vibes", cursive';
 
 // Draw one photo into its cell, cover-fitting around the face point.
 function drawGoldenMilePhoto(ctx, img, rect, panel, grade, sizeId) {
@@ -351,23 +352,27 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
-  // Pink script subhead, Palmline style: big, white-outlined, slanted,
-  // overlapping the bottom of the title.
-  const scriptSize = bandH * 0.38;
-  const scriptY = bandY + titleSize * 0.9;
+  // Pink script subhead, Palmline/Golden Mile style: delicate flowing
+  // cursive, small accent, strongly slanted (~25-30 deg lean), soft
+  // light-pink with a subtle glow only — NO white outline. r15f: sits
+  // in its own space BELOW the title (never overlapping a title
+  // letter), and is slightly thicker than r15e via a very thin
+  // SAME-COLOUR pink stroke, so it reads at a glance and stays elegant.
+  const scriptSize = bandH * 0.27;
+  const scriptY = bandY + titleSize * 1.12 + scriptSize * 0.75;
   ctx.save();
   ctx.translate(W / 2, scriptY);
-  ctx.transform(1, 0, -0.14, 1, 0, 0);
-  ctx.font = `italic ${scriptSize}px ${SCRIPT_FONT}`;
+  ctx.transform(1, 0, -0.47, 1, 0, 0);
+  ctx.font = `${scriptSize}px ${SCRIPT_FONT}`;
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-  ctx.shadowBlur = scriptSize * 0.08;
-  ctx.shadowOffsetY = scriptSize * 0.03;
+  ctx.shadowColor = 'rgba(255, 143, 192, 0.55)';
+  ctx.shadowBlur = scriptSize * 0.18;
+  ctx.shadowOffsetY = scriptSize * 0.02;
+  ctx.lineWidth = scriptSize * 0.05;
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = scriptSize * 0.1;
+  ctx.strokeStyle = '#ffa8cc';
+  ctx.fillStyle = '#ffa8cc';
   ctx.strokeText(state.script, 0, 0);
-  ctx.fillStyle = '#ff5fa8';
   ctx.fillText(state.script, 0, 0);
   ctx.restore();
   // Ribbon line.
@@ -375,7 +380,7 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   const ribbonText = state.ribbon;
   const rw = ctx.measureText(ribbonText).width + bandH * 0.3;
   const rx = (W - rw) / 2;
-  const ry = bandY + titleSize * 0.95 + bandH * 0.34;
+  const ry = scriptY + scriptSize * 0.8;
   const rg = ctx.createLinearGradient(rx, 0, rx + rw, 0);
   rg.addColorStop(0, '#ffd23e');
   rg.addColorStop(1, '#ff7a18');

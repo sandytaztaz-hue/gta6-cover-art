@@ -251,11 +251,11 @@ body {
 /* Title band: its own zone across the middle — lettering never sits on
    a car, a bike, a person or a face. */
 .gm-titleband {
-  position: absolute; left: 0; right: 0; top: 57%; height: 24%;
+  position: absolute; left: 0; right: 0; top: 61.5%; height: 24%;
   z-index: 5; text-align: center; pointer-events: none;
 }
-.gm-cover[data-size="portrait"] .gm-titleband { top: 58%; }
-.gm-cover[data-size="landscape"] .gm-titleband { top: 54%; }
+.gm-cover[data-size="portrait"] .gm-titleband { top: 62.5%; }
+.gm-cover[data-size="landscape"] .gm-titleband { top: 58.5%; }
 .gm-title {
   margin: 0; font-family: "Anton", sans-serif; font-weight: 400;
   font-size: 11cqw; line-height: 1; letter-spacing: 0.5cqw;
@@ -269,14 +269,18 @@ body {
 .gm-cover[data-grade="vice"] .gm-title { background: linear-gradient(90deg, #ff2e88, #2ee6c8); -webkit-background-clip: text; background-clip: text; }
 .gm-cover[data-grade="noir"] .gm-title { background: linear-gradient(90deg, #ff5c8a, #ffd23e); -webkit-background-clip: text; background-clip: text; }
 .gm-script {
-  /* Palmline/Golden Mile style: THIN delicate flowing cursive, small
+  /* Palmline/Golden Mile style: delicate flowing cursive, small
      accent, strongly slanted (~25 deg), soft light-pink glow only —
-     NO white outline — mirrors the canvas draw in cover.js. */
-  margin: -5.5% 0 0; color: #ffa8cc;
+     NO white outline — mirrors the canvas draw in cover.js. r15f:
+     sits in its own space BELOW the title (positive top margin, no
+     overlap) and is slightly thicker than r15e via a very thin
+     SAME-COLOUR pink stroke, so it reads at a glance and stays elegant. */
+  margin: 0.6% 0 0; color: #ffa8cc;
   font-family: "Great Vibes", cursive; font-style: normal;
   font-size: 5.2cqw; line-height: 1.1;
   transform: skewX(-25deg);
-  text-shadow: 0 0 0.9cqw rgba(255, 143, 192, 0.75), 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.6);
+  -webkit-text-stroke: 0.12cqw #ffa8cc;
+  text-shadow: 0 0 1.1cqw rgba(255, 143, 192, 0.75), 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.6);
 }
 .gm-ribbon {
   display: inline-block; margin-top: 2.2%;

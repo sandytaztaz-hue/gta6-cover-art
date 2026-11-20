@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>VICE PURSUIT sample scenes</title></head>
+<body>
+<canvas id="c" width="1600" height="1000"></canvas>
+<script>
+// VICE PURSUIT — in-session sample scenes (rebuild r7).
+// Eight distinct canvas paintings, one hero + one atmosphere/weather each.
+// Drawn here in the recording, saved as app/samples/*.jpg by
+// tools/render-samples.mjs. Deterministic: seeded random, fixed palettes.
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const W = 1600, H = 1000;
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function sky(stops) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  stops.forEach(([o, c]) => g.addColorStop(o, c));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function glowSun(x, y, r, core, halo) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
+  g.addColorStop(0, halo);
+  g.addColorStop(0.4, halo.replace(/[\d.]+\)$/, '0.35)'));
+  g.addColorStop(1, halo.replace(/[\d.]+\)$/, '0)'));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = core;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+}
+
+function clouds(rnd, n, y0, y1, color, alpha) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = alpha;
+  for (let i = 0; i < n; i++) {
+    const x = rnd() * W, y = y0 + rnd() * (y1 - y0), s = 40 + rnd() * 130;
+    ctx.beginPath();
+    ctx.ellipse(x, y, s, s * 0.32, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + s * 0.5, y + 6, s * 0.7, s * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function birds(rnd, n, y0, y1) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(20,10,30,0.75)';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const x = rnd() * W, y = y0 + rnd() * (y1 - y0), s = 8 + rnd() * 14;
+    ctx.beginPath();
+    ctx.moveTo(x - s, y);
+    ctx.quadraticCurveTo(x - s * 0.4, y - s * 0.7, x, y);
+    ctx.quadraticCurveTo(x + s * 0.4, y - s * 0.7, x + s, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function palm(x, y, s, lean, dark) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(lean || 0);
+  ctx.scale(s, s);
+  ctx.strokeStyle = dark || '#2c1a0e';
+  ctx.lineWidth = 14;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(18, -90, 6, -190);
+  ctx.stroke();
+  ctx.lineWidth = 9;
+  const fronds = [[-1.5, -0.5], [-1.1, -0.9], [-0.4, -1.15], [0.4, -1.1], [1.1, -0.85], [1.5, -0.4], [-0.9, -1.25], [0.9, -1.2]];
+  for (const [dx, dy] of fronds) {
+    ctx.beginPath();
+    ctx.moveTo(6, -190);
+    ctx.quadraticCurveTo(6 + dx * 70, -190 + dy * 70, 6 + dx * 130, -190 + dy * 110 + 55);
+    ctx.stroke();
+  }
+  ctx.fillStyle = dark ? dark : '#3a2412';
+  ctx.beginPath(); ctx.arc(6, -190, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-8, -178, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(20, -176, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function rain(rnd, n, color) {
+  ctx.save();
+  ctx.strokeStyle = color || 'rgba(200,220,255,0.45)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const x = rnd() * W, y = rnd() * H, len = 26 + rnd() * 40;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - len * 0.18, y + len);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function building(x, y, w, h, rnd, lit) {
+  ctx.fillStyle = '#0d0a1a';
+  ctx.fillRect(x, y, w, h);
+  const cols = Math.floor(w / 26), rows = Math.floor(h / 34);
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      if (rnd() > 0.55) continue;
+      const warm = rnd() > 0.5;
+      ctx.fillStyle = warm ? `rgba(255,190,90,${0.5 + rnd() * 0.5})` : `rgba(120,220,255,${0.4 + rnd() * 0.5})`;
+      ctx.fillRect(x + 8 + i * 26, y + 10 + j * 34, 13, 18);
+    }
+  }
+  ctx.fillStyle = lit || 'rgba(255,46,136,0.9)';
+  ctx.fillRect(x, y - 6, w, 6);
+}
+
+// ---------------------------------------------------------------- vehicles
+
+function wheel(x, y, r, rim) {
+  ctx.fillStyle = '#0a0a0c';
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = rim || '#c8ccd4';
+  ctx.beginPath(); ctx.arc(x, y, r * 0.62, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a1a1e';
+  ctx.beginPath(); ctx.arc(x, y, r * 0.30, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i++) {
+    const a = (i * Math.PI * 2) / 5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * r * 0.58, y + Math.sin(a) * r * 0.58);
+    ctx.stroke();
+  }
+}
+
+/** Mix a #rrggbb colour toward white (f>0) or black (f<0). */
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const mix = (v) => Math.max(0, Math.min(255, Math.round(f >= 0 ? v + (255 - v) * f : v * (1 + f))));
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+}
+
+/** Low angular supercar, side profile. x,y = ground centre, s = length. */
+function sportsCar(x, y, s, body, glass) {
+  const u = s / 640;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  // Ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(0, 6, 300, 16, 0, 0, Math.PI * 2); ctx.fill();
+  // Body: angular wedge, bright metallic highlight along the shoulder
+  const grad = ctx.createLinearGradient(-300, -120, 300, 0);
+  grad.addColorStop(0, shade(body, -0.25));
+  grad.addColorStop(0.35, body);
+  grad.addColorStop(0.55, shade(body, 0.55));
+  grad.addColorStop(0.75, body);
+  grad.addColorStop(1, shade(body, -0.35));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(-310, -18);
+  ctx.lineTo(-268, -58);
+  ctx.lineTo(-150, -72);
+  ctx.lineTo(-96, -128);
+  ctx.lineTo(58, -132);
+  ctx.lineTo(150, -78);
+  ctx.lineTo(288, -62);
+  ctx.lineTo(312, -30);
+  ctx.lineTo(300, -8);
+  ctx.lineTo(-300, -8);
+  ctx.closePath();
+  ctx.fill();
+  // Glass canopy
+  ctx.fillStyle = glass || 'rgba(12,18,34,0.92)';
+  ctx.beginPath();
+  ctx.moveTo(-88, -118);
+  ctx.lineTo(50, -122);
+  ctx.lineTo(128, -76);
+  ctx.lineTo(-138, -76);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.moveTo(-60, -116);
+  ctx.lineTo(-10, -118);
+  ctx.lineTo(-40, -80);
+  ctx.lineTo(-80, -80);
+  ctx.closePath();
+  ctx.fill();
+  // Side intake + skirt
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.beginPath();
+  ctx.moveTo(120, -52); ctx.lineTo(240, -52); ctx.lineTo(252, -18); ctx.lineTo(128, -18);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(-300, -12, 600, 8);
+  // Headlight: sharp LED slash + short beam
+  ctx.fillStyle = '#fff6c8';
+  ctx.beginPath();
+  ctx.moveTo(-306, -46); ctx.lineTo(-252, -56); ctx.lineTo(-268, -34); ctx.lineTo(-304, -30);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,240,150,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(-306, -40); ctx.lineTo(-380, -22); ctx.lineTo(-380, 2); ctx.lineTo(-300, -14);
+  ctx.closePath(); ctx.fill();
+  // Taillight
+  ctx.fillStyle = '#ff2e3e';
+  ctx.fillRect(284, -52, 22, 10);
+  wheel(-196, -6, 52);
+  wheel(196, -6, 52);
+  ctx.restore();
+}
+
+/** Black-and-white interceptor with a flashing light bar. */
+function policeCar(x, y, s) {
+  const u = s / 640;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0, 8, 290, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8e8ec';
+  ctx.beginPath();
+  ctx.moveTo(-300, -14);
+  ctx.lineTo(-272, -52);
+  ctx.lineTo(-150, -64);
+  ctx.lineTo(-100, -118);
+  ctx.lineTo(60, -120);
+  ctx.lineTo(150, -70);
+  ctx.lineTo(292, -56);
+  ctx.lineTo(306, -26);
+  ctx.lineTo(296, -8);
+  ctx.lineTo(-296, -8);
+  ctx.closePath(); ctx.fill();
+  // Black hood + trunk
+  ctx.fillStyle = '#14141a';
+  ctx.beginPath();
+  ctx.moveTo(-300, -14); ctx.lineTo(-272, -52); ctx.lineTo(-150, -64); ctx.lineTo(-140, -14);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(150, -70); ctx.lineTo(292, -56); ctx.lineTo(306, -26); ctx.lineTo(296, -8);
+  ctx.lineTo(170, -8); ctx.closePath(); ctx.fill();
+  // Glass
+  ctx.fillStyle = 'rgba(10,16,30,0.95)';
+  ctx.beginPath();
+  ctx.moveTo(-92, -108); ctx.lineTo(52, -110); ctx.lineTo(126, -68); ctx.lineTo(-132, -68);
+  ctx.closePath(); ctx.fill();
+  // Light bar: red left, blue right, with glow
+  ctx.fillStyle = '#ff2038';
+  ctx.fillRect(-34, -138, 30, 16);
+  ctx.fillStyle = '#2266ff';
+  ctx.fillRect(6, -138, 30, 16);
+  ctx.fillStyle = 'rgba(255,32,56,0.45)';
+  ctx.beginPath(); ctx.arc(-19, -130, 46, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(34,102,255,0.45)';
+  ctx.beginPath(); ctx.arc(21, -130, 46, 0, Math.PI * 2); ctx.fill();
+  // Door badge
+  ctx.fillStyle = '#14141a';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('POLICE', 0, -34);
+  wheel(-190, -6, 50);
+  wheel(190, -6, 50);
+  ctx.restore();
+}
+
+/** Sport bike with a leaning rider, side profile. x,y = ground centre. */
+function sportBike(x, y, s, body, riderJacket) {
+  const u = s / 420;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0, 4, 210, 12, 0, 0, Math.PI * 2); ctx.fill();
+  wheel(-140, -34, 46);
+  wheel(140, -34, 46);
+  // Frame + fairing
+  ctx.fillStyle = body || '#15151c';
+  ctx.beginPath();
+  ctx.moveTo(-150, -60);
+  ctx.lineTo(-60, -120);
+  ctx.lineTo(60, -128);
+  ctx.lineTo(170, -70);
+  ctx.lineTo(150, -30);
+  ctx.lineTo(40, -44);
+  ctx.lineTo(-60, -40);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.beginPath();
+  ctx.moveTo(60, -124); ctx.lineTo(120, -96); ctx.lineTo(90, -60); ctx.lineTo(40, -90);
+  ctx.closePath(); ctx.fill();
+  // Red accents
+  ctx.fillStyle = '#d92038';
+  ctx.beginPath();
+  ctx.moveTo(120, -96); ctx.lineTo(168, -72); ctx.lineTo(150, -44); ctx.lineTo(104, -64);
+  ctx.closePath(); ctx.fill();
+  // Headlight
+  ctx.fillStyle = '#fff6c8';
+  ctx.beginPath();
+  ctx.moveTo(168, -78); ctx.lineTo(186, -70); ctx.lineTo(172, -52); ctx.lineTo(156, -60);
+  ctx.closePath(); ctx.fill();
+  // Rider: leaning torso, helmet, arm to bars, leg to peg
+  ctx.fillStyle = riderJacket || '#1c1c22';
+  ctx.beginPath();
+  ctx.moveTo(-40, -110);
+  ctx.quadraticCurveTo(10, -170, 70, -158);
+  ctx.quadraticCurveTo(96, -140, 78, -112);
+  ctx.quadraticCurveTo(20, -96, -40, -110);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#101014';
+  ctx.beginPath(); ctx.arc(88, -176, 30, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(160,220,255,0.85)';
+  ctx.beginPath(); ctx.arc(98, -180, 16, -0.6, 1.2); ctx.fill();
+  ctx.strokeStyle = '#1c1c22';
+  ctx.lineWidth = 16;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(66, -150); ctx.lineTo(150, -96); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10, -104); ctx.lineTo(-30, -44); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- more figures
+
+/** Open-top convertible, side profile. */
+function convertible(x, y, s, body) {
+  const u = s / 640;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = 'rgba(0,0,0,0.32)';
+  ctx.beginPath(); ctx.ellipse(0, 6, 300, 15, 0, 0, Math.PI * 2); ctx.fill();
+  const grad = ctx.createLinearGradient(-300, -100, 300, 0);
+  grad.addColorStop(0, shade(body, -0.2));
+  grad.addColorStop(0.35, body);
+  grad.addColorStop(0.55, shade(body, 0.5));
+  grad.addColorStop(1, shade(body, -0.3));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(-310, -16);
+  ctx.lineTo(-270, -50);
+  ctx.lineTo(-160, -58);
+  ctx.lineTo(60, -58);
+  ctx.lineTo(180, -52);
+  ctx.lineTo(300, -34);
+  ctx.lineTo(306, -8);
+  ctx.lineTo(-300, -8);
+  ctx.closePath(); ctx.fill();
+  // Interior + seats + driver head
+  ctx.fillStyle = '#1c1410';
+  ctx.fillRect(-150, -58, 210, 22);
+  ctx.fillStyle = '#3a2a1c';
+  ctx.fillRect(-120, -78, 34, 24);
+  ctx.fillStyle = '#c89a6a';
+  ctx.beginPath(); ctx.arc(-60, -76, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2a1a10';
+  ctx.beginPath(); ctx.arc(-60, -82, 20, Math.PI, 0); ctx.fill();
+  // Headlight + grille
+  ctx.fillStyle = '#fff3b0';
+  ctx.beginPath(); ctx.ellipse(-288, -34, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(268, -34, 34, 10);
+  wheel(-196, -6, 50);
+  wheel(196, -6, 50);
+  ctx.restore();
+}
+
+/** Boxy muscle car, side profile. */
+function muscleCar(x, y, s, body) {
+  const u = s / 640;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.ellipse(0, 8, 300, 15, 0, 0, Math.PI * 2); ctx.fill();
+  const grad = ctx.createLinearGradient(0, -140, 0, 0);
+  grad.addColorStop(0, shade(body, 0.55));
+  grad.addColorStop(0.25, body);
+  grad.addColorStop(1, shade(body, -0.3));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(-310, -12);
+  ctx.lineTo(-300, -56);
+  ctx.lineTo(-180, -66);
+  ctx.lineTo(-140, -116);
+  ctx.lineTo(60, -116);
+  ctx.lineTo(120, -66);
+  ctx.lineTo(300, -58);
+  ctx.lineTo(310, -16);
+  ctx.lineTo(300, -8);
+  ctx.lineTo(-300, -8);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(12,18,34,0.92)';
+  ctx.beginPath();
+  ctx.moveTo(-128, -104); ctx.lineTo(48, -104); ctx.lineTo(96, -64); ctx.lineTo(-152, -64);
+  ctx.closePath(); ctx.fill();
+  // Racing stripe
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(-40, -116, 26, 108);
+  ctx.fillRect(4, -116, 26, 108);
+  ctx.fillStyle = '#fff3b0';
+  ctx.beginPath(); ctx.ellipse(-296, -36, 16, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ff2e3e';
+  ctx.fillRect(288, -48, 18, 10);
+  wheel(-196, -6, 52);
+  wheel(196, -6, 52);
+  ctx.restore();
+}
+
+/** Off-road truck with a roof rack, side profile. */
+function truck(x, y, s, body) {
+  const u = s / 640;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0, 8, 310, 16, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.moveTo(-310, -10);
+  ctx.lineTo(-310, -90);
+  ctx.lineTo(-120, -90);
+  ctx.lineTo(-60, -150);
+  ctx.lineTo(120, -150);
+  ctx.lineTo(190, -90);
+  ctx.lineTo(310, -90);
+  ctx.lineTo(310, -10);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(12,18,34,0.92)';
+  ctx.beginPath();
+  ctx.moveTo(-50, -138); ctx.lineTo(108, -138); ctx.lineTo(150, -92); ctx.lineTo(-50, -92);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#2a2a30';
+  ctx.fillRect(-300, -100, 170, 12);
+  ctx.fillStyle = '#fff3b0';
+  ctx.beginPath(); ctx.ellipse(296, -66, 16, 10, 0, 0, Math.PI * 2); ctx.fill();
+  // Roof rack + spare wheel
+  ctx.strokeStyle = '#1a1a1e';
+  ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(-40, -150); ctx.lineTo(110, -150); ctx.lineTo(110, -168); ctx.lineTo(-40, -168); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = '#0a0a0c';
+  ctx.beginPath(); ctx.arc(-215, -60, 34, 0, Math.PI * 2); ctx.fill();
+  wheel(-200, -8, 56);
+  wheel(200, -8, 56);
+  ctx.restore();
+}
+
+/** Speedboat with wake, side profile. */
+function speedboat(x, y, s, body) {
+  const u = s / 560;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.moveTo(-270, -40);
+  ctx.lineTo(240, -40);
+  ctx.lineTo(280, -6);
+  ctx.lineTo(200, 26);
+  ctx.lineTo(-220, 26);
+  ctx.lineTo(-280, -10);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(12,18,34,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(-120, -40); ctx.lineTo(60, -40); ctx.lineTo(90, -86); ctx.lineTo(-90, -86);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(-90, -86); ctx.lineTo(90, -86); ctx.lineTo(70, -100); ctx.lineTo(-70, -100);
+  ctx.closePath(); ctx.fill();
+  // Wake
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.beginPath();
+  ctx.moveTo(-280, 26);
+  ctx.lineTo(-420, 44);
+  ctx.lineTo(-420, 60);
+  ctx.lineTo(-200, 40);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/** Yacht silhouette with lit windows. */
+function yacht(x, y, s) {
+  const u = s / 640;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = '#0e0c18';
+  ctx.beginPath();
+  ctx.moveTo(-300, -30);
+  ctx.lineTo(280, -30);
+  ctx.lineTo(310, 6);
+  ctx.lineTo(220, 30);
+  ctx.lineTo(-260, 30);
+  ctx.lineTo(-310, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(-180, -90, 360, 60);
+  ctx.fillRect(-120, -140, 240, 50);
+  ctx.fillStyle = 'rgba(255,190,90,0.95)';
+  for (let i = 0; i < 8; i++) ctx.fillRect(-160 + i * 42, -76, 22, 22);
+  for (let i = 0; i < 5; i++) ctx.fillRect(-100 + i * 42, -128, 20, 20);
+  ctx.restore();
+}
+
+/** Helicopter with a searchlight beam. */
+function helicopter(x, y, s) {
+  const u = s / 520;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  // Searchlight beam
+  ctx.fillStyle = 'rgba(255,244,180,0.16)';
+  ctx.beginPath();
+  ctx.moveTo(-40, 30);
+  ctx.lineTo(-260, 320);
+  ctx.lineTo(180, 320);
+  ctx.lineTo(40, 30);
+  ctx.closePath(); ctx.fill();
+  // Rotor
+  ctx.fillStyle = '#1a1a22';
+  ctx.fillRect(-260, -108, 520, 10);
+  ctx.fillRect(-8, -108, 16, 40);
+  // Body
+  ctx.fillStyle = '#22222c';
+  ctx.beginPath();
+  ctx.moveTo(-200, -60);
+  ctx.quadraticCurveTo(-160, -96, -60, -96);
+  ctx.lineTo(80, -96);
+  ctx.quadraticCurveTo(180, -90, 190, -40);
+  ctx.lineTo(150, 0);
+  ctx.lineTo(-160, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(140,220,255,0.85)';
+  ctx.beginPath();
+  ctx.moveTo(90, -88); ctx.lineTo(160, -82); ctx.lineTo(150, -30); ctx.lineTo(80, -40);
+  ctx.closePath(); ctx.fill();
+  // Tail
+  ctx.fillStyle = '#22222c';
+  ctx.beginPath();
+  ctx.moveTo(-190, -70); ctx.lineTo(-320, -110); ctx.lineTo(-320, -60); ctx.lineTo(-190, -30);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ff2e3e';
+  ctx.fillRect(-330, -118, 16, 60);
+  // Skids + light
+  ctx.strokeStyle = '#1a1a22';
+  ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(-120, 0); ctx.lineTo(-140, 34); ctx.moveTo(100, 0); ctx.lineTo(120, 34); ctx.stroke();
+  ctx.fillRect(-180, 30, 340, 8);
+  ctx.fillStyle = '#fff3b0';
+  ctx.beginPath(); ctx.arc(0, 8, 14, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- people
+
+/** Woman with sunglasses, large portrait — shoulders up. */
+function womanPortrait(x, y, s, skin, hair, jacket) {
+  const u = s / 600;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  // Shoulders / jacket
+  ctx.fillStyle = jacket || '#c98a4b';
+  ctx.beginPath();
+  ctx.moveTo(-300, 320);
+  ctx.quadraticCurveTo(-280, 120, -160, 80);
+  ctx.lineTo(-60, 60);
+  ctx.lineTo(60, 60);
+  ctx.lineTo(160, 80);
+  ctx.quadraticCurveTo(280, 120, 300, 320);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(-60, 60); ctx.lineTo(60, 60); ctx.lineTo(90, 180); ctx.lineTo(-90, 180);
+  ctx.closePath(); ctx.fill();
+  // Neck + head
+  ctx.fillStyle = skin || '#e8b98d';
+  ctx.fillRect(-34, 10, 68, 70);
+  ctx.beginPath(); ctx.arc(0, -70, 96, 0, Math.PI * 2); ctx.fill();
+  // Hair: dark bob, wind-blown to the left
+  ctx.fillStyle = hair || '#1c1210';
+  ctx.beginPath();
+  ctx.arc(0, -88, 104, Math.PI * 0.95, Math.PI * 2.05);
+  ctx.quadraticCurveTo(120, -40, 96, 30);
+  ctx.quadraticCurveTo(70, -30, 60, -80);
+  ctx.quadraticCurveTo(-40, -140, -96, -60);
+  ctx.quadraticCurveTo(-140, 10, -170, 60);
+  ctx.quadraticCurveTo(-190, -10, -150, -90);
+  ctx.closePath(); ctx.fill();
+  // Sunglasses
+  ctx.fillStyle = '#0d0d12';
+  ctx.beginPath();
+  ctx.ellipse(-44, -66, 34, 24, 0.06, 0, Math.PI * 2);
+  ctx.ellipse(44, -66, 34, 24, -0.06, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(140,220,255,0.7)';
+  ctx.beginPath(); ctx.ellipse(-52, -74, 12, 8, 0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(36, -74, 12, 8, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#0d0d12';
+  ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(-10, -66); ctx.lineTo(10, -66); ctx.stroke();
+  // Lips + earring
+  ctx.fillStyle = '#c93b5e';
+  ctx.beginPath(); ctx.ellipse(0, 6, 26, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd76a';
+  ctx.beginPath(); ctx.arc(-98, -10, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+/** Detective in a long coat and hat, full figure. */
+function detective(x, y, s) {
+  const u = s / 420;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  // Coat
+  ctx.fillStyle = '#2a2620';
+  ctx.beginPath();
+  ctx.moveTo(-70, -180);
+  ctx.lineTo(70, -180);
+  ctx.lineTo(96, 120);
+  ctx.lineTo(40, 120);
+  ctx.lineTo(20, 20);
+  ctx.lineTo(-20, 20);
+  ctx.lineTo(-40, 120);
+  ctx.lineTo(-96, 120);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#17140f';
+  ctx.fillRect(-8, -180, 16, 300);
+  // Legs + shoes
+  ctx.fillStyle = '#17140f';
+  ctx.fillRect(-58, 120, 34, 90);
+  ctx.fillRect(24, 120, 34, 90);
+  ctx.fillRect(-66, 204, 48, 16);
+  ctx.fillRect(18, 204, 48, 16);
+  // Arms
+  ctx.strokeStyle = '#2a2620';
+  ctx.lineWidth = 30;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-64, -160); ctx.lineTo(-92, -40); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(64, -160); ctx.lineTo(96, -70); ctx.stroke();
+  // Head + hat
+  ctx.fillStyle = '#d9a87e';
+  ctx.beginPath(); ctx.arc(0, -220, 42, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1c1712';
+  ctx.beginPath(); ctx.ellipse(0, -252, 78, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(-46, -300, 92, 52);
+  ctx.fillStyle = '#3a2e1e';
+  ctx.fillRect(-46, -262, 92, 10);
+  ctx.restore();
+}
+
+/** Fisherman on a pier, silhouette with rod. */
+function fisherman(x, y, s) {
+  const u = s / 420;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.strokeStyle = '#1a1216';
+  ctx.lineWidth = 26;
+  ctx.lineCap = 'round';
+  // Legs
+  ctx.beginPath(); ctx.moveTo(-10, -40); ctx.lineTo(-30, 110); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10, -40); ctx.lineTo(34, 110); ctx.stroke();
+  // Body
+  ctx.fillStyle = '#1a1216';
+  ctx.beginPath();
+  ctx.moveTo(-34, -180); ctx.lineTo(34, -180); ctx.lineTo(26, -30); ctx.lineTo(-26, -30);
+  ctx.closePath(); ctx.fill();
+  // Head + cap
+  ctx.beginPath(); ctx.arc(0, -214, 30, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(-34, -238, 68, 12);
+  // Arm + rod
+  ctx.beginPath(); ctx.moveTo(28, -160); ctx.lineTo(120, -120); ctx.stroke();
+  ctx.strokeStyle = '#1a1216';
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(100, -130); ctx.lineTo(330, -330); ctx.stroke();
+  ctx.strokeStyle = 'rgba(26,18,22,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(330, -330); ctx.quadraticCurveTo(300, -180, 260, -40); ctx.stroke();
+  ctx.restore();
+}
+
+/** Surfer with board, silhouette on sand. */
+function surfer(x, y, s) {
+  const u = s / 420;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(u, u);
+  ctx.fillStyle = '#241a12';
+  // Board under arm
+  ctx.save();
+  ctx.translate(40, -60);
+  ctx.rotate(-0.5);
+  ctx.fillStyle = '#f2e6c8';
+  ctx.beginPath(); ctx.ellipse(0, 0, 150, 26, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ff2e88';
+  ctx.fillRect(-150, -6, 90, 12);
+  ctx.restore();
+  // Body
+  ctx.beginPath();
+  ctx.moveTo(-26, -190); ctx.lineTo(26, -190); ctx.lineTo(20, -40); ctx.lineTo(-20, -40);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#241a12';
+  ctx.fillRect(-24, -40, 20, 110);
+  ctx.fillRect(6, -40, 20, 110);
+  ctx.strokeStyle = '#241a12';
+  ctx.lineWidth = 18;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-20, -170); ctx.lineTo(-70, -110); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, -224, 28, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- scenes
+
+/** 1 — HERO. Orange supercar + Ducati side by side on a sunny palm
+ *  boulevard, bright sky on top (no dark overlay), a motorcycle and a
+ *  police interceptor chasing behind. */
+function sceneChase() {
+  const rnd = mulberry32(101);
+  sky([[0, '#ffd76a'], [0.35, '#ffb03a'], [0.55, '#ff8a5e'], [0.75, '#ff6a8a'], [1, '#e85d9e']]);
+  glowSun(300, 190, 74, '#fff3c4', 'rgba(255,220,120,0.9)');
+  clouds(rnd, 7, 60, 260, '#fff2c8', 0.55);
+  birds(rnd, 6, 90, 260);
+  // Distant skyline, warm haze
+  ctx.fillStyle = 'rgba(120,60,110,0.35)';
+  for (let i = 0; i < 12; i++) {
+    const bw = 60 + rnd() * 90, bh = 90 + rnd() * 160;
+    ctx.fillRect(60 + i * 135, 560 - bh, bw, bh);
+  }
+  // Palms lining the boulevard
+  palm(90, 640, 1.15, -0.08, '#3a2412');
+  palm(1500, 630, 1.05, 0.1, '#3a2412');
+  palm(1330, 610, 0.8, 0.05, '#4a2c14');
+  // Road
+  ctx.fillStyle = '#3d3a44';
+  ctx.beginPath(); ctx.moveTo(0, 660); ctx.lineTo(W, 640); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#565260';
+  ctx.fillRect(0, 640, W, 22);
+  ctx.fillStyle = '#ffd76a';
+  for (let i = 0; i < 9; i++) ctx.fillRect(40 + i * 185, 812, 110, 12);
+  // Sidewalk + beach grass strip
+  ctx.fillStyle = '#c9a06a';
+  ctx.fillRect(0, 600, W, 42);
+  // Chasers behind, smaller and further up the road
+  policeCar(330, 700, 330);
+  sportBike(660, 690, 220, '#1c1c24', '#2a2a30');
+  // Speed lines
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 4;
+  for (let i = 0; i < 14; i++) {
+    const y = 700 + rnd() * 240, x = rnd() * W, len = 90 + rnd() * 160;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y - 6); ctx.stroke();
+  }
+  ctx.restore();
+  // HERO: orange supercar + Ducati, big in the frame
+  sportsCar(560, 880, 760, '#ff7a1a');
+  sportBike(1230, 860, 430, '#14141c', '#1c1c22');
+  // Warm light wash, low and bright — never dark on top
+  const wash = ctx.createLinearGradient(0, 0, 0, H);
+  wash.addColorStop(0, 'rgba(255,200,90,0.10)');
+  wash.addColorStop(0.6, 'rgba(255,140,60,0.08)');
+  wash.addColorStop(1, 'rgba(255,90,60,0.14)');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** 2 — Neon night city rain: woman with sunglasses + red sports car. */
+function sceneNeon() {
+  const rnd = mulberry32(202);
+  sky([[0, '#0a0618'], [0.45, '#1a0f38'], [0.7, '#3a1150'], [1, '#120a24']]);
+  glowSun(1240, 180, 60, '#ffe9f4', 'rgba(255,46,136,0.55)');
+  // Skyline with lit windows
+  building(40, 300, 180, 420, rnd, 'rgba(34,211,238,0.9)');
+  building(260, 200, 150, 520, rnd, 'rgba(255,46,136,0.9)');
+  building(450, 330, 200, 390, rnd);
+  building(1180, 260, 170, 460, rnd, 'rgba(255,46,136,0.9)');
+  building(1390, 360, 180, 360, rnd);
+  // Neon signs
+  ctx.save();
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 64px sans-serif';
+  ctx.shadowColor = '#ff2e88'; ctx.shadowBlur = 34;
+  ctx.fillStyle = '#ff5ea8';
+  ctx.fillText('VICE', 700, 300);
+  ctx.font = 'bold 44px sans-serif';
+  ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 30;
+  ctx.fillStyle = '#7ee7f7';
+  ctx.fillText('HOTEL', 700, 380);
+  ctx.font = 'bold 40px sans-serif';
+  ctx.shadowColor = '#ffc93c'; ctx.shadowBlur = 26;
+  ctx.fillStyle = '#ffd76a';
+  ctx.fillText('24H', 700, 450);
+  ctx.restore();
+  // Wet street with neon reflections
+  ctx.fillStyle = '#14101f';
+  ctx.fillRect(0, 700, W, 300);
+  const refl = ctx.createLinearGradient(0, 700, 0, H);
+  refl.addColorStop(0, 'rgba(255,46,136,0.28)');
+  refl.addColorStop(0.5, 'rgba(34,211,238,0.16)');
+  refl.addColorStop(1, 'rgba(10,6,24,0)');
+  ctx.fillStyle = refl;
+  ctx.fillRect(0, 700, W, 300);
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  for (let i = 0; i < 40; i++) {
+    const x = rnd() * W, w = 2 + rnd() * 5, h = 14 + rnd() * 60;
+    ctx.fillRect(x, 720 + rnd() * 240, w, h);
+  }
+  // Woman portrait, left, large
+  womanPortrait(330, 560, 620, '#e8b98d', '#1c1210', '#c98a4b');
+  // Red sports car, right
+  sportsCar(1150, 880, 620, '#d92038');
+  rain(rnd, 320, 'rgba(190,210,255,0.5)');
+  // Vignette, light — keep the neon readable
+  const v = ctx.createRadialGradient(800, 500, 300, 800, 500, 1100);
+  v.addColorStop(0, 'rgba(0,0,0,0)');
+  v.addColorStop(1, 'rgba(0,0,0,0.35)');
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** 3 — Golden-hour beach: convertible + surfer, low sun, long shadows. */
+function sceneBeach() {
+  const rnd = mulberry32(303);
+  sky([[0, '#ffe9a8'], [0.4, '#ffb35e'], [0.62, '#ff8a6a'], [0.8, '#e86a8a'], [1, '#c95d9e']]);
+  glowSun(1150, 420, 92, '#fff8d8', 'rgba(255,190,80,0.9)');
+  clouds(rnd, 6, 80, 300, '#ffe9c0', 0.6);
+  birds(rnd, 8, 120, 320);
+  // Ocean band
+  const sea = ctx.createLinearGradient(0, 560, 0, 760);
+  sea.addColorStop(0, '#ff9a6a');
+  sea.addColorStop(0.5, '#d96a8a');
+  sea.addColorStop(1, '#7a4a86');
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, 560, W, 200);
+  ctx.fillStyle = 'rgba(255,240,200,0.55)';
+  for (let i = 0; i < 26; i++) {
+    const x = rnd() * W, y = 580 + rnd() * 160, w = 60 + rnd() * 180;
+    ctx.fillRect(x, y, w, 3);
+  }
+  // Sun path on the water
+  ctx.fillStyle = 'rgba(255,244,180,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(1080, 560); ctx.lineTo(1220, 560); ctx.lineTo(1330, 760); ctx.lineTo(970, 760);
+  ctx.closePath(); ctx.fill();
+  // Sand
+  ctx.fillStyle = '#e8c88f';
+  ctx.fillRect(0, 760, W, 240);
+  ctx.fillStyle = 'rgba(160,110,60,0.25)';
+  for (let i = 0; i < 60; i++) {
+    ctx.beginPath();
+    ctx.ellipse(rnd() * W, 780 + rnd() * 200, 20 + rnd() * 50, 4 + rnd() * 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Palms + convertible + surfer
+  palm(120, 780, 1.0, -0.06, '#4a2c14');
+  palm(1520, 790, 0.9, 0.08, '#4a2c14');
+  convertible(700, 900, 720, '#22b8a8');
+  surfer(1300, 880, 380);
+  const wash = ctx.createLinearGradient(0, 0, 0, H);
+  wash.addColorStop(0, 'rgba(255,200,90,0.12)');
+  wash.addColorStop(1, 'rgba(255,120,60,0.16)');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** 4 — Rainy downtown: muscle car + detective, wet reflections. */
+function sceneRain() {
+  const rnd = mulberry32(404);
+  sky([[0, '#232838'], [0.5, '#3a3f52'], [0.8, '#4a4460'], [1, '#2a2438']]);
+  clouds(rnd, 9, 40, 240, '#5a5f74', 0.7);
+  // Rainy skyline
+  ctx.fillStyle = 'rgba(16,16,26,0.85)';
+  for (let i = 0; i < 14; i++) {
+    const bw = 70 + rnd() * 100, bh = 120 + rnd() * 260;
+    ctx.fillRect(20 + i * 118, 620 - bh, bw, bh);
+  }
+  ctx.fillStyle = 'rgba(255,190,90,0.5)';
+  for (let i = 0; i < 60; i++) {
+    ctx.fillRect(30 + rnd() * W, 380 + rnd() * 220, 8, 12);
+  }
+  // Wet asphalt
+  ctx.fillStyle = '#1c1a24';
+  ctx.fillRect(0, 620, W, 380);
+  ctx.fillStyle = 'rgba(255,201,60,0.14)';
+  ctx.fillRect(0, 620, W, 60);
+  // Street lamps + reflections
+  for (const lx of [220, 800, 1380]) {
+    ctx.fillStyle = '#0e0c16';
+    ctx.fillRect(lx, 420, 10, 220);
+    ctx.fillStyle = '#ffd76a';
+    ctx.beginPath(); ctx.arc(lx + 5, 414, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,215,106,0.35)';
+    ctx.beginPath(); ctx.arc(lx + 5, 414, 60, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,215,106,0.18)';
+    ctx.fillRect(lx - 8, 640, 26, 260);
+  }
+  // Muscle car + detective
+  muscleCar(560, 860, 700, '#2e6fd8');
+  detective(1250, 830, 400);
+  rain(rnd, 420);
+  // Puddle glow
+  ctx.fillStyle = 'rgba(120,180,255,0.12)';
+  ctx.beginPath(); ctx.ellipse(560, 920, 420, 26, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+/** 5 — Desert noon: off-road truck + biker, dust, harsh sun. */
+function sceneDesert() {
+  const rnd = mulberry32(505);
+  sky([[0, '#ffe9b0'], [0.45, '#ffd27a'], [0.7, '#f2b25e'], [1, '#e89a5a']]);
+  glowSun(1330, 150, 84, '#fffbe8', 'rgba(255,240,170,0.95)');
+  // Distant mesas
+  ctx.fillStyle = 'rgba(160,90,50,0.55)';
+  ctx.beginPath();
+  ctx.moveTo(0, 560); ctx.lineTo(180, 420); ctx.lineTo(420, 420); ctx.lineTo(520, 520);
+  ctx.lineTo(760, 500); ctx.lineTo(900, 380); ctx.lineTo(1180, 380); ctx.lineTo(1300, 500);
+  ctx.lineTo(W, 520); ctx.lineTo(W, 620); ctx.lineTo(0, 620); ctx.closePath(); ctx.fill();
+  // Dunes
+  ctx.fillStyle = '#e8b06a';
+  ctx.beginPath();
+  ctx.moveTo(0, 620);
+  ctx.quadraticCurveTo(400, 560, 800, 620);
+  ctx.quadraticCurveTo(1200, 680, W, 600);
+  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#d99a52';
+  ctx.beginPath();
+  ctx.moveTo(0, 760);
+  ctx.quadraticCurveTo(500, 700, 1000, 770);
+  ctx.quadraticCurveTo(1300, 810, W, 740);
+  ctx.lineTo(W, H); ctx.lineTo(0, H);
+  ctx.closePath(); ctx.fill();
+  // Road
+  ctx.fillStyle = '#8a6a44';
+  ctx.beginPath(); ctx.moveTo(0, 860); ctx.lineTo(W, 820); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#f2d8a0';
+  for (let i = 0; i < 8; i++) ctx.fillRect(60 + i * 200, 920, 110, 10);
+  // Cacti
+  for (const [cx, cy, cs] of [[180, 780, 0.9], [1460, 740, 1.1], [90, 860, 0.7]]) {
+    ctx.save();
+    ctx.translate(cx, cy); ctx.scale(cs, cs);
+    ctx.fillStyle = '#3f7a3a';
+    ctx.fillRect(-10, -110, 20, 110);
+    ctx.fillRect(-46, -70, 16, 50); ctx.fillRect(-46, -70, 46, 14);
+    ctx.fillRect(30, -90, 16, 60); ctx.fillRect(0, -90, 46, 14);
+    ctx.restore();
+  }
+  // Dust clouds behind the truck
+  ctx.fillStyle = 'rgba(232,190,130,0.7)';
+  for (let i = 0; i < 14; i++) {
+    ctx.beginPath();
+    ctx.ellipse(300 + rnd() * 260, 800 + rnd() * 60, 50 + rnd() * 90, 20 + rnd() * 30, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  truck(620, 900, 680, '#c9501e');
+  sportBike(1280, 890, 360, '#3a3a44', '#5a3a1e');
+  // Heat shimmer wash
+  ctx.fillStyle = 'rgba(255,220,140,0.14)';
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** 6 — Harbor dusk: speedboat + yacht, purple sky, city lights. */
+function sceneHarbor() {
+  const rnd = mulberry32(606);
+  sky([[0, '#2a1450'], [0.4, '#7a2d8f'], [0.65, '#ff6a8a'], [0.8, '#ffb35e'], [1, '#5a2a70']]);
+  glowSun(420, 480, 70, '#ffe9b0', 'rgba(255,170,90,0.8)');
+  // City lights on the horizon
+  ctx.fillStyle = 'rgba(20,10,36,0.8)';
+  for (let i = 0; i < 16; i++) {
+    const bw = 50 + rnd() * 80, bh = 40 + rnd() * 140;
+    ctx.fillRect(20 + i * 102, 560 - bh, bw, bh);
+  }
+  ctx.fillStyle = 'rgba(255,190,90,0.7)';
+  for (let i = 0; i < 50; i++) ctx.fillRect(30 + rnd() * W, 440 + rnd() * 110, 6, 8);
+  // Water
+  const sea = ctx.createLinearGradient(0, 560, 0, H);
+  sea.addColorStop(0, '#8a3a7a');
+  sea.addColorStop(0.5, '#4a2a70');
+  sea.addColorStop(1, '#241a44');
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, 560, W, 440);
+  ctx.fillStyle = 'rgba(255,180,120,0.4)';
+  for (let i = 0; i < 30; i++) {
+    const x = rnd() * W, y = 580 + rnd() * 380, w = 50 + rnd() * 160;
+    ctx.fillRect(x, y, w, 3);
+  }
+  // Moon-path shimmer
+  ctx.fillStyle = 'rgba(255,230,170,0.22)';
+  ctx.beginPath();
+  ctx.moveTo(360, 560); ctx.lineTo(480, 560); ctx.lineTo(620, H); ctx.lineTo(220, H);
+  ctx.closePath(); ctx.fill();
+  speedboat(480, 760, 560, '#e8e4da');
+  yacht(1150, 700, 620);
+  palm(90, 580, 0.9, -0.08, '#1c0e2a');
+  birds(rnd, 5, 160, 320);
+}
+
+/** 7 — Rooftop night: helicopter + skyline, searchlight. */
+function sceneRooftop() {
+  const rnd = mulberry32(707);
+  sky([[0, '#05030e'], [0.5, '#0d0a24'], [0.8, '#1a1440'], [1, '#241a4a']]);
+  // Moon
+  glowSun(1350, 160, 52, '#f2f0e8', 'rgba(220,220,255,0.5)');
+  // Skyline
+  building(0, 420, 200, 380, rnd);
+  building(230, 330, 170, 470, rnd, 'rgba(255,46,136,0.9)');
+  building(430, 460, 220, 340, rnd);
+  building(680, 300, 180, 500, rnd);
+  building(890, 430, 200, 370, rnd, 'rgba(34,211,238,0.9)');
+  building(1120, 360, 170, 440, rnd);
+  building(1320, 470, 280, 330, rnd);
+  // Stars
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  for (let i = 0; i < 90; i++) ctx.fillRect(rnd() * W, rnd() * 300, 2, 2);
+  // Rooftop foreground
+  ctx.fillStyle = '#0b0816';
+  ctx.beginPath(); ctx.moveTo(0, 800); ctx.lineTo(W, 780); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#171226';
+  ctx.fillRect(0, 780, W, 14);
+  // Rooftop props: AC unit + antenna
+  ctx.fillStyle = '#1c1730';
+  ctx.fillRect(120, 700, 180, 82);
+  ctx.fillRect(1300, 720, 150, 62);
+  ctx.strokeStyle = '#2a2344';
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(1420, 720); ctx.lineTo(1420, 560); ctx.stroke();
+  ctx.fillStyle = '#ff2e3e';
+  ctx.beginPath(); ctx.arc(1420, 556, 8, 0, Math.PI * 2); ctx.fill();
+  // Helicopter, centre, searchlight sweeping the roof
+  helicopter(780, 520, 520);
+}
+
+/** 8 — Misty dawn fishing pier: boat + fisherman, pale fog. */
+function scenePier() {
+  const rnd = mulberry32(808);
+  sky([[0, '#f2d8c8'], [0.45, '#e8b8a0'], [0.7, '#c98a90'], [1, '#8a6a80']]);
+  glowSun(1180, 300, 66, '#fff2d8', 'rgba(255,220,170,0.8)');
+  // Calm water
+  const sea = ctx.createLinearGradient(0, 560, 0, H);
+  sea.addColorStop(0, '#d9a08e');
+  sea.addColorStop(0.5, '#a87a88');
+  sea.addColorStop(1, '#6a5470');
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, 560, W, 440);
+  ctx.fillStyle = 'rgba(255,240,220,0.35)';
+  for (let i = 0; i < 24; i++) {
+    const x = rnd() * W, y = 580 + rnd() * 380, w = 70 + rnd() * 200;
+    ctx.fillRect(x, y, w, 3);
+  }
+  // Small boat with a fisherman silhouette
+  ctx.fillStyle = '#3a2a30';
+  ctx.beginPath();
+  ctx.moveTo(950, 640); ctx.lineTo(1250, 640); ctx.lineTo(1210, 672); ctx.lineTo(990, 672);
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(1080, 600, 10, 44);
+  ctx.fillStyle = 'rgba(58,42,48,0.9)';
+  ctx.beginPath(); ctx.arc(1100, 596, 12, 0, Math.PI * 2); ctx.fill();
+  // Wooden pier, diagonal from the left
+  ctx.save();
+  ctx.translate(0, 0);
+  ctx.fillStyle = '#5a4030';
+  ctx.beginPath();
+  ctx.moveTo(0, 700); ctx.lineTo(760, 620); ctx.lineTo(760, 700); ctx.lineTo(0, 860);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#6e4f3a';
+  for (let i = 0; i < 12; i++) {
+    const t = i / 11;
+    const x0 = t * 760, y0 = 700 - t * 80;
+    ctx.fillRect(x0, y0, 10, 150);
+  }
+  ctx.fillStyle = '#3a2a20';
+  for (const px of [120, 380, 640]) {
+    ctx.fillRect(px, 700, 18, 200);
+  }
+  ctx.restore();
+  // Fisherman at the pier end
+  fisherman(700, 640, 360);
+  // Fog layers
+  ctx.fillStyle = 'rgba(242,216,200,0.28)';
+  ctx.fillRect(0, 520, W, 90);
+  ctx.fillStyle = 'rgba(242,216,200,0.22)';
+  ctx.fillRect(0, 760, W, 120);
+  birds(rnd, 6, 140, 300);
+}
+
+// ---------------------------------------------------------------- export
+
+const SCENES = {
+  chase: sceneChase,
+  neon: sceneNeon,
+  beach: sceneBeach,
+  rain: sceneRain,
+  desert: sceneDesert,
+  harbor: sceneHarbor,
+  rooftop: sceneRooftop,
+  pier: scenePier,
+};
+
+/** Draw one scene and return a JPEG data URL. */
+window.renderScene = function (key) {
+  const fn = SCENES[key];
+  if (!fn) throw new Error(`unknown scene ${key}`);
+  ctx.clearRect(0, 0, W, H);
+  fn();
+  return cv.toDataURL('image/jpeg', 0.9);
+};
+window.SCENES = Object.keys(SCENES);
+window.__samplesReady = true;
+</script>
+</body>
+</html>

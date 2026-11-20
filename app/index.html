@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VICE PURSUIT STUDIO — GTA-style multi-panel cover maker</title>
-<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel cover. Four layouts, four grades, full-resolution PNG export — all offline.">
+<title>VICE PURSUIT STUDIO — GTA-style multi-panel magazine cover maker</title>
+<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel magazine cover. Eight layouts, six grades, full-resolution PNG export — all offline.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,13 +14,17 @@
       <span class="brand-mark" aria-hidden="true">☀</span>
       <div>
         <h1>VICE PURSUIT STUDIO</h1>
-        <p class="tagline">Multi-panel cover art, made from your photos</p>
+        <p class="tagline">Multi-panel magazine covers, made from your photos</p>
       </div>
     </div>
     <div class="steps" role="list" aria-label="Three steps">
       <span class="step" id="step1" role="listitem"><b>1</b> Add photo</span>
       <span class="step" id="step2" role="listitem"><b>2</b> Layout + caption</span>
       <span class="step" id="step3" role="listitem"><b>3</b> Export PNG</span>
+    </div>
+    <div class="history" role="group" aria-label="Undo and redo">
+      <button id="undoBtn" type="button" disabled>↶ Undo</button>
+      <button id="redoBtn" type="button" disabled>↷ Redo</button>
     </div>
   </header>
 
@@ -30,6 +34,7 @@
         <h2>Photos</h2>
         <label class="file-btn" for="photoInput">Add photos…</label>
         <input id="photoInput" type="file" accept="image/*" multiple hidden>
+        <input id="replaceInput" type="file" accept="image/*" hidden>
         <p class="hint">Drop photos onto the preview, or onto a panel. Each panel takes its own photo — or use one photo for all panels.</p>
         <div class="row">
           <button id="sampleBtn" type="button">Try a sample</button>
@@ -40,25 +45,35 @@
       <div class="group">
         <h2>Layout</h2>
         <div class="btn-row" role="group" aria-label="Layout">
-          <button type="button" data-layout="diagonal">Diagonal</button>
-          <button type="button" data-layout="grid">Grid</button>
-          <button type="button" data-layout="hero">Hero + strip</button>
+          <button type="button" data-layout="magazine">Magazine</button>
           <button type="button" data-layout="five">Five panel</button>
+          <button type="button" data-layout="hero">Hero + strip</button>
+          <button type="button" data-layout="grid">Grid</button>
+          <button type="button" data-layout="diagonal">Diagonal</button>
+          <button type="button" data-layout="triptych">Triptych</button>
+          <button type="button" data-layout="collage">Collage</button>
+          <button type="button" data-layout="spotlight">Spotlight</button>
         </div>
-        <p class="hint" id="layoutHint">3 slanted panels, poster feel.</p>
+        <p class="hint" id="layoutHint">Hero left, three stacked right, billing strip below.</p>
       </div>
 
       <div class="group">
         <h2>Caption</h2>
         <label class="field-label" for="captionInput">Main caption</label>
         <input id="captionInput" type="text" maxlength="40" value="VICE PURSUIT" autocomplete="off">
-        <label class="field-label" for="subInput">Sub-caption</label>
-        <input id="subInput" type="text" maxlength="60" value="EVERY MILE A GETAWAY" autocomplete="off">
+        <label class="field-label" for="subInput">Script sub-caption</label>
+        <input id="subInput" type="text" maxlength="60" value="Coastline Nights" autocomplete="off">
         <div class="btn-row" role="group" aria-label="Caption colour">
+          <button type="button" data-color="gradient">Gradient</button>
           <button type="button" data-color="white">White</button>
           <button type="button" data-color="pink">Neon pink</button>
           <button type="button" data-color="cyan">Cyan</button>
           <button type="button" data-color="gold">Gold</button>
+        </div>
+        <div class="btn-row" role="group" aria-label="Title style">
+          <button type="button" data-style="gradient">Gradient fill</button>
+          <button type="button" data-style="solid">Solid fill</button>
+          <button type="button" data-style="outline">Outline only</button>
         </div>
         <div class="btn-row" role="group" aria-label="Caption position">
           <button type="button" data-pos="top">Top</button>
@@ -73,14 +88,59 @@
           <button type="button" data-grade="neon">Neon</button>
           <button type="button" data-grade="vice">Vice Night</button>
           <button type="button" data-grade="golden">Golden Hour</button>
+          <button type="button" data-grade="noir">Noir</button>
+          <button type="button" data-grade="teal">Miami Teal</button>
         </div>
-        <label class="field-label" for="intensity">Intensity <span id="intensityVal"></span></label>
+        <label class="field-label" for="intensity">Strength <span id="intensityVal"></span></label>
         <input id="intensity" type="range" min="0" max="1" step="0.05" value="0.75">
+        <label class="field-label" for="contrast">Contrast <span id="contrastVal"></span></label>
+        <input id="contrast" type="range" min="0.5" max="1.8" step="0.02" value="1.06">
+        <label class="field-label" for="saturation">Saturation <span id="saturationVal"></span></label>
+        <input id="saturation" type="range" min="0" max="2" step="0.05" value="1.25">
         <label class="check"><input id="grainToggle" type="checkbox" checked> Film grain</label>
-        <label class="field-label" for="grainAmount">Grain amount</label>
+        <label class="field-label" for="grainAmount">Grain amount <span id="grainVal"></span></label>
         <input id="grainAmount" type="range" min="0" max="1" step="0.05" value="0.5">
         <label class="check"><input id="vignetteToggle" type="checkbox" checked> Vignette</label>
-        <label class="check"><input id="wantedToggle" type="checkbox"> Wanted stars (5 gold stars, top-right — for the police-chase scene)</label>
+        <label class="check"><input id="halftoneToggle" type="checkbox"> Halftone print dots</label>
+      </div>
+
+      <div class="group">
+        <h2>Magazine furniture</h2>
+        <label class="check"><input id="wantedToggle" type="checkbox" checked> Wanted stars</label>
+        <label class="field-label" for="starCount">Star count</label>
+        <select id="starCount">
+          <option value="0">0 — off</option>
+          <option value="3">3 stars</option>
+          <option value="4">4 stars</option>
+          <option value="5" selected>5 stars</option>
+        </select>
+        <label class="check"><input id="tagsToggle" type="checkbox" checked> Role tags (THE CLOSER…)</label>
+        <label class="check"><input id="placesToggle" type="checkbox" checked> Location + time labels</label>
+        <label class="check"><input id="heatToggle" type="checkbox" checked> HEAT ★★★★★ badge</label>
+        <label class="check"><input id="sealToggle" type="checkbox" checked> HOT seal</label>
+        <label class="check"><input id="quoteToggle" type="checkbox" checked> Newspaper quote</label>
+        <label class="field-label" for="quoteInput">Quote</label>
+        <input id="quoteInput" type="text" maxlength="80" value="HOTTER THAN THE ASPHALT" autocomplete="off">
+        <label class="field-label" for="quoteSourceInput">Quote source</label>
+        <input id="quoteSourceInput" type="text" maxlength="40" value="THE PALM GAZETTE" autocomplete="off">
+        <label class="check"><input id="stripToggle" type="checkbox" checked> Bottom billing strip</label>
+        <label class="field-label" for="stripInput">Strip text</label>
+        <input id="stripInput" type="text" maxlength="80" value="ONE COASTLINE · SIX STORIES · NO CURFEW" autocomplete="off">
+      </div>
+
+      <div class="group">
+        <h2>Stickers</h2>
+        <div class="btn-row" role="group" aria-label="Stickers">
+          <button type="button" data-sticker="sun">☀ Sun</button>
+          <button type="button" data-sticker="palm">🌴 Palm</button>
+          <button type="button" data-sticker="star">★ Star</button>
+          <button type="button" data-sticker="flame">🔥 Flame</button>
+          <button type="button" data-sticker="badge">✦ Badge</button>
+        </div>
+        <div class="row">
+          <button id="clearStickersBtn" type="button">Clear stickers</button>
+        </div>
+        <p class="hint">Stickers land in the middle of the cover — drag the preview to move a photo, not a sticker.</p>
       </div>
 
       <div class="group">
@@ -99,7 +159,7 @@
     </section>
 
     <section class="stage" aria-label="Live preview">
-      <div class="preview-wrap">
+      <div class="preview-wrap" id="stageDrop">
         <canvas id="preview" aria-label="Cover preview"></canvas>
       </div>
       <div class="panel-bar">
@@ -110,20 +170,23 @@
           <button type="button" class="panel-dot" aria-label="Panel 3">3</button>
           <button type="button" class="panel-dot" aria-label="Panel 4">4</button>
           <button type="button" class="panel-dot" aria-label="Panel 5">5</button>
+          <button type="button" class="panel-dot" aria-label="Panel 6">6</button>
         </div>
       </div>
       <div class="panel-tools">
         <label class="field-label" for="zoom">Zoom</label>
         <input id="zoom" type="range" min="1" max="3" step="0.01" value="1">
         <button id="fitBtn" type="button">Fit: fill panel</button>
+        <button id="replaceBtn" type="button">Replace photo</button>
         <button id="clearPanelBtn" type="button">Clear panel</button>
       </div>
       <p class="hint">Click a panel to select it, then drag the photo to move it. Zoom and fit are per panel.</p>
+      <div class="sample-strip" id="sampleStrip" aria-label="Built-in sample photos"></div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/).</p>
+    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). Sample photos are canvas art drawn in this session, not Rockstar artwork and not photos of real people.</p>
   </footer>
 </div>
 

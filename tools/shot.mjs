@@ -1,10 +1,11 @@
-// Duskline Cover Studio — screenshot runner (Node 22 stdlib only).
+// VICE PURSUIT — screenshot runner (rebuild r7).
 //
-// Serves app/ with serve.ts, drives headless Chrome over its DevTools protocol
-// (plain WebSocket, no library), opens each ?shot= URL from shots.json, waits
-// for window.__shotReady, and saves a JPEG into screenshots/. Covers are the
-// PNGs the app itself wrote, shown full-bleed and captured to JPEG. Profile
-// cleanup is best-effort: Chrome is killed first and may still hold files.
+// Serves app/ with serve.ts, drives headless Chrome over its DevTools
+// protocol (plain WebSocket, no library), opens each ?shot= URL from
+// shots.json, waits for window.__shotReady, and saves a JPEG into
+// screenshots/. Covers are the PNGs the app itself wrote, shown full-bleed
+// and captured to JPEG. Profile cleanup is best-effort: Chrome is killed
+// first and may still hold files.
 //
 //   node tools/shot.mjs [--port 8123] [--quality 85]
 //
@@ -87,7 +88,7 @@ class Cdp {
 // ---------------------------------------------------------------- run
 
 async function takeShot(shot, baseUrl) {
-  const profile = mkdtempSync(join(tmpdir(), 'duskline-shot-'));
+  const profile = mkdtempSync(join(tmpdir(), 'vice-shot-'));
   const chrome = spawn(CHROME, [
     '--headless=new',
     '--no-sandbox',
@@ -98,7 +99,7 @@ async function takeShot(shot, baseUrl) {
     'about:blank',
   ], { stdio: 'ignore' });
   try {
-    const version = await waitFor(
+    await waitFor(
       async () => {
         const res = await fetch('http://127.0.0.1:9222/json/version');
         if (!res.ok) throw new Error('devtools not up');
@@ -107,7 +108,6 @@ async function takeShot(shot, baseUrl) {
       20000,
       'chrome devtools',
     );
-    void version;
     const targetRes = await fetch(
       `http://127.0.0.1:9222/json/new?${encodeURIComponent(baseUrl + shot.query)}`,
       { method: 'PUT' },

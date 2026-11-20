@@ -1,18 +1,27 @@
-// Duskline Cover Studio — entry program (Node 22, standard library only).
+// VICE PURSUIT STUDIO — entry program (Node 22, standard library only).
 //
-// The app is this directory's app/ folder: plain static files a desktop browser
-// loads offline (app/index.html and its ES modules, no library, no network
-// request). This program hands it in: it copies app/ and screenshots/ from
-// beside this file to /output and writes /output/dossier.json, the summary the
-// judge reads, with the vendored make.fun library.
+// The app is this directory's app/ folder: plain static files a desktop
+// browser loads offline (app/index.html and its ES modules, no library, no
+// network request). This program hands it in: it copies app/ and
+// screenshots/ from beside this file to /output and writes
+// /output/dossier.json, the summary the judge reads, with the vendored
+// make.fun library.
 //
-// The cover maker itself: four multi-panel layouts (Diagonal, Grid,
-// Hero + strip, Five panel), four canvas grades (Sunset, Neon, Vice Night,
-// Golden Hour), a big outlined glow caption, and full-resolution PNG export
-// at 1080×1080, 1080×1350 and 1920×1080. Its five sample photos
-// (app/samples/) — a photo-real chase hero (orange supercar + sport bike on
-// a sunny palm boulevard) plus four panel photos (driver, beach, detail,
-// neon) — were made with an image model and are free to use.
+// The cover maker itself: eight multi-panel layouts (Magazine, Five panel,
+// Hero + strip, Grid, Diagonal, Triptych, Collage, Spotlight), six canvas
+// grades (Sunset, Neon, Vice Night, Golden Hour, Noir, Miami Teal) with
+// strength / contrast / saturation / grain / vignette / halftone controls,
+// a giant gradient headline with a pink script subtitle, magazine furniture
+// (role tags, location + time labels, HEAT star badge, HOT seal, newspaper
+// quote, billing strip with barcode), stickers, undo/redo, per-panel zoom
+// and pan, smart crops, and full-resolution PNG export at 1080×1080,
+// 1080×1350 and 1920×1080. Its eight sample photos (app/samples/) are
+// canvas art drawn in this session with headless Chrome — one distinct
+// hero and one distinct atmosphere/weather per photo: the sunny palm
+// boulevard chase (orange supercar + sport bike, police behind), a rainy
+// neon night with a woman driver, a golden-hour beach, a rainy downtown,
+// a dusty desert noon, a harbor dusk, a rooftop night, and a misty dawn
+// fishing pier.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
@@ -23,11 +32,11 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-app.ts';
 
-// The scorer's own caps (reference/gate.json): only text_max_bytes shapes the
-// bytes; the others refuse an entry the scorer would refuse (more than 4
-// screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB of app
-// files, in all, or a path under app/ over 1000 bytes: app/ counts beside
-// /output's own 1000-entry cap, its screenshots/ and dossier.json).
+// The scorer's own caps (reference/gate.json): only text_max_bytes shapes
+// the bytes; the others refuse an entry the scorer would refuse (more than
+// 4 screenshots or one over 256 KiB; more than 993 files in app/ or 48 MiB
+// of app files, in all, or a path under app/ over 1000 bytes: app/ counts
+// beside /output's own 1000-entry cap, its screenshots/ and dossier.json).
 const DOSSIER_CAPS = {
   text_max_bytes: 163840,
   screenshots: { max: 4, max_bytes: 262144 },
@@ -54,6 +63,6 @@ const shotEntries = copyIfPresent(join(here, 'screenshots'), join(out, 'screensh
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, DOSSIER_CAPS));
 
 console.log(
-  `Duskline Cover Studio — VICE PURSUIT handed in: ${appEntries} app entries, ` +
+  `VICE PURSUIT STUDIO handed in: ${appEntries} app entries, ` +
   `${shotEntries} screenshots, dossier written to ${join(out, 'dossier.json')}`,
 );

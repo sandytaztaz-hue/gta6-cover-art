@@ -1,9 +1,9 @@
-// VICE PURSUIT — deterministic screenshot states (rebuild r7).
+// VICE PURSUIT — deterministic screenshot states (rebuild r8, photo edition).
 //
 // ?shot=cover   the cover alone, full-bleed: the app renders the PNG it
 //               would export at full resolution, shows that PNG, and sets
 //               window.__shotReady once it is on screen.
-// ?shot=editor  the editor with the built-in samples loaded.
+// ?shot=editor  the editor with the built-in sample photographs loaded.
 // Both accept &layout= &grade= &size= &caption= &subcaption= &color= &pos=
 // &style= &stars=0..5 &strength= &contrast= &saturation= and
 // &panels=<comma list of scene keys> (panel 1 = the hero/lead photo)
@@ -34,6 +34,15 @@ async function samplePhotos() {
   return Promise.all(order.map((k) => loadImage(SAMPLES[k].file)));
 }
 
+/** Per-panel focus offsets for the cover shots: the hero crop sits a touch
+ *  high so the chase cars, not the sky, fill the big panel; the strip
+ *  panels get their own small shifts. */
+const SHOT_CROPS = [
+  { ox: 0, oy: -0.06 }, { ox: 0.08, oy: -0.04 },
+  { ox: 0, oy: 0.08 }, { ox: -0.04, oy: -0.08 },
+  { ox: 0.06, oy: 0.06 }, { ox: -0.06, oy: 0.02 },
+];
+
 /** Cover-only mode: render the real export PNG and show it full-bleed. */
 async function coverShot() {
   document.getElementById('app').hidden = true;
@@ -41,18 +50,13 @@ async function coverShot() {
   coverView.hidden = false;
   applyParams(params);
   const photos = await samplePhotos();
+  const order = panelOrder();
   const n = state.panels.length;
   for (let i = 0; i < n; i++) {
     const img = photos[i % photos.length];
-    const key = panelOrder()[i % photos.length];
-    // The hero crop sits a touch high so the chase vehicles, not the sky,
-    // fill the big panel; the strip panels get their own small shifts.
-    const crops = [
-      { ox: 0, oy: -0.06 }, { ox: 0.08, oy: -0.04 },
-      { ox: 0, oy: 0.08 }, { ox: -0.04, oy: -0.08 },
-      { ox: 0.06, oy: 0.06 }, { ox: -0.06, oy: 0.02 },
-    ];
-    state.panels[i] = { img, name: key, zoom: 1, ox: crops[i % 6].ox, oy: crops[i % 6].oy, fit: 'cover' };
+    const key = order[i % photos.length];
+    const crop = SHOT_CROPS[i % SHOT_CROPS.length];
+    state.panels[i] = { img, name: key, zoom: 1, ox: crop.ox, oy: crop.oy, fit: 'cover' };
   }
   await fontsReady();
   const size = SIZES[state.size] || SIZES.landscape;

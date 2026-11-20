@@ -1,15 +1,15 @@
-// VICE PURSUIT — magazine cover engine (rebuild r7).
+// VICE PURSUIT — magazine cover engine (rebuild r8, photo edition).
 //
 // Plain canvas, no libraries, no network. One draw routine paints the live
 // preview and the full-resolution export, so what you see is exactly what
-// the PNG holds. The look is a magazine cover in the HEATWAVE style: a
-// giant gradient headline, a pink script subtitle, a collage of panels with
-// role tags and location/time labels, a HEAT star badge, a HOT seal, a
-// newspaper quote, and a billing strip with a barcode along the bottom.
+// the PNG holds. The look is a magazine cover in the HEATWAVE style: real
+// photographs in a panel collage, a giant gradient headline with a pink
+// script subtitle, role tags, location + time labels, a HEAT star badge, a
+// HOT seal, a newspaper quote, and a billing strip with a barcode.
 //
-// Layouts cut the frame into panels; grades tint the whole frame; the
-// headline sits across the lower hero so the photos stay bright on top —
-// never a dark overlay over the hero.
+// The photos stay bright on top — no dark overlay over the hero. The
+// headline sits across the lower hero so the cars and the chase stay
+// visible above it.
 
 export const SIZES = {
   square: { w: 1080, h: 1080, label: '1080 × 1080 (post)' },
@@ -18,23 +18,15 @@ export const SIZES = {
 };
 
 export const LAYOUTS = {
-  magazine: { label: 'Magazine', panels: 4, hint: 'hero left, three stacked right, billing strip below' },
+  magazine: { label: 'Magazine', panels: 4, hint: 'Hero left, three stacked right, billing strip below' },
   five: { label: 'Five panel', panels: 5, hint: '1 hero panel + 4 small below' },
   hero: { label: 'Hero + strip', panels: 4, hint: '1 big panel + 3 small below' },
-  grid: { label: 'Grid', panels: 4, hint: '2 × 2 four panels' },
-  diagonal: { label: 'Diagonal', panels: 3, hint: '3 slanted panels, poster feel' },
-  triptych: { label: 'Triptych', panels: 3, hint: '3 tall panels side by side' },
-  collage: { label: 'Collage', panels: 6, hint: 'hero + 5 small mosaic panels' },
-  spotlight: { label: 'Spotlight', panels: 1, hint: 'one full-bleed photo, headline over it' },
 };
 
 export const GRADES = {
-  sunset: { label: 'Sunset', hint: 'orange-pink warmth' },
+  golden: { label: 'Golden Hour', hint: 'warm amber / gold glow' },
   neon: { label: 'Neon', hint: 'magenta / cyan duotone' },
   vice: { label: 'Vice Night', hint: 'purple / blue night' },
-  golden: { label: 'Golden Hour', hint: 'warm amber / gold glow' },
-  noir: { label: 'Noir', hint: 'high-contrast black & white' },
-  teal: { label: 'Miami Teal', hint: 'teal shadows, pink highlights' },
 };
 
 export const CAPTION_COLORS = {
@@ -102,28 +94,6 @@ export function layoutPanels(layout, W, H) {
     poly: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]],
   });
   const g = Math.max(4, Math.round(W * 0.008));
-  if (layout === 'grid') {
-    const hw = (W - g) / 2;
-    const hh = (H - g) / 2;
-    return [
-      rect(0, 0, hw, hh),
-      rect(hw + g, 0, hw, hh),
-      rect(0, hh + g, hw, hh),
-      rect(hw + g, hh + g, hw, hh),
-    ];
-  }
-  if (layout === 'hero') {
-    const topH = Math.round(H * 0.62);
-    const stripY = topH + g;
-    const stripH = H - stripY;
-    const sw = (W - 2 * g) / 3;
-    return [
-      rect(0, 0, W, topH),
-      rect(0, stripY, sw, stripH),
-      rect(sw + g, stripY, sw, stripH),
-      rect(2 * (sw + g), stripY, sw, stripH),
-    ];
-  }
   if (layout === 'five') {
     const topH = Math.round(H * 0.60);
     const stripY = topH + g;
@@ -137,79 +107,46 @@ export function layoutPanels(layout, W, H) {
       rect(3 * (sw + g), stripY, sw, stripH),
     ];
   }
-  if (layout === 'magazine') {
-    // Magazine: hero panel left (58% wide), three stacked panels right.
-    // The billing strip along the bottom is furniture, not a photo panel.
-    const stripH = Math.round(H * 0.085);
-    const bodyH = H - stripH - g;
-    const heroW = Math.round(W * 0.58);
-    const rightX = heroW + g;
-    const rightW = W - rightX;
-    const rh = (bodyH - 2 * g) / 3;
+  if (layout === 'hero') {
+    const topH = Math.round(H * 0.62);
+    const stripY = topH + g;
+    const stripH = H - stripY;
+    const sw = (W - 2 * g) / 3;
     return [
-      rect(0, 0, heroW, bodyH),
-      rect(rightX, 0, rightW, rh),
-      rect(rightX, rh + g, rightW, rh),
-      rect(rightX, 2 * (rh + g), rightW, rh),
+      rect(0, 0, W, topH),
+      rect(0, stripY, sw, stripH),
+      rect(sw + g, stripY, sw, stripH),
+      rect(2 * (sw + g), stripY, sw, stripH),
     ];
   }
-  if (layout === 'triptych') {
-    const tw = (W - 2 * g) / 3;
-    return [
-      rect(0, 0, tw, H),
-      rect(tw + g, 0, tw, H),
-      rect(2 * (tw + g), 0, tw, H),
-    ];
-  }
-  if (layout === 'collage') {
-    // Collage: big hero top-left, two small top-right, three small bottom.
-    const topH = Math.round(H * 0.58);
-    const botY = topH + g;
-    const botH = H - botY;
-    const heroW = Math.round(W * 0.62);
-    const smallW = (W - heroW - g) / 2;
-    const bw = (W - 2 * g) / 3;
-    return [
-      rect(0, 0, heroW, topH),
-      rect(heroW + g, 0, smallW, topH),
-      rect(heroW + g + smallW + g, 0, smallW, topH),
-      rect(0, botY, bw, botH),
-      rect(bw + g, botY, bw, botH),
-      rect(2 * (bw + g), botY, bw, botH),
-    ];
-  }
-  if (layout === 'spotlight') {
-    return [rect(0, 0, W, H)];
-  }
-  // diagonal: three slanted panels, cuts leaning like a poster fold.
-  const poly = (pts) => {
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    return {
-      x: Math.min(...xs), y: Math.min(...ys),
-      w: Math.max(...xs) - Math.min(...xs),
-      h: Math.max(...ys) - Math.min(...ys),
-      poly: pts,
-    };
-  };
-  const c1 = [[W * 0.36, 0], [W * 0.30, H]];
-  const c2 = [[W * 0.68, 0], [W * 0.62, H]];
+  // magazine: hero panel left (58% wide), three stacked panels right.
+  // The billing strip along the bottom is furniture, not a photo panel.
+  const stripH = Math.round(H * 0.085);
+  const bodyH = H - stripH - g;
+  const heroW = Math.round(W * 0.58);
+  const rightX = heroW + g;
+  const rightW = W - rightX;
+  const rh = (bodyH - 2 * g) / 3;
   return [
-    poly([[0, 0], c1[0], c1[1], [0, H]]),
-    poly([c1[0], c2[0], c2[1], c1[1]]),
-    poly([c2[0], [W, 0], [W, H], c2[1]]),
+    rect(0, 0, heroW, bodyH),
+    rect(rightX, 0, rightW, rh),
+    rect(rightX, rh + g, rightW, rh),
+    rect(rightX, 2 * (rh + g), rightW, rh),
   ];
 }
 
 /** The neon divider strokes for a layout: pairs of points, pixel coords. */
 export function layoutDividers(layout, W, H) {
   const g = Math.max(4, Math.round(W * 0.008));
-  if (layout === 'grid') {
-    const hw = (W - g) / 2;
-    const hh = (H - g) / 2;
+  if (layout === 'five') {
+    const topH = Math.round(H * 0.60);
+    const stripY = topH + g;
+    const sw = (W - 3 * g) / 4;
     return [
-      [[hw + g / 2, 0], [hw + g / 2, H]],
-      [[0, hh + g / 2], [W, hh + g / 2]],
+      [[0, topH + g / 2], [W, topH + g / 2]],
+      [[sw + g / 2, stripY], [sw + g / 2, H]],
+      [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
+      [[3 * sw + 2.5 * g, stripY], [3 * sw + 2.5 * g, H]],
     ];
   }
   if (layout === 'hero') {
@@ -222,55 +159,16 @@ export function layoutDividers(layout, W, H) {
       [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
     ];
   }
-  if (layout === 'five') {
-    const topH = Math.round(H * 0.60);
-    const stripY = topH + g;
-    const sw = (W - 3 * g) / 4;
-    return [
-      [[0, topH + g / 2], [W, topH + g / 2]],
-      [[sw + g / 2, stripY], [sw + g / 2, H]],
-      [[2 * sw + 1.5 * g, stripY], [2 * sw + 1.5 * g, H]],
-      [[3 * sw + 2.5 * g, stripY], [3 * sw + 2.5 * g, H]],
-    ];
-  }
-  if (layout === 'magazine') {
-    const stripH = Math.round(H * 0.085);
-    const bodyH = H - stripH - g;
-    const heroW = Math.round(W * 0.58);
-    const rightX = heroW + g;
-    const rh = (bodyH - 2 * g) / 3;
-    return [
-      [[heroW + g / 2, 0], [heroW + g / 2, bodyH]],
-      [[rightX, rh + g / 2], [W, rh + g / 2]],
-      [[rightX, 2 * rh + 1.5 * g], [W, 2 * rh + 1.5 * g]],
-      [[0, bodyH + g / 2], [W, bodyH + g / 2]],
-    ];
-  }
-  if (layout === 'triptych') {
-    const tw = (W - 2 * g) / 3;
-    return [
-      [[tw + g / 2, 0], [tw + g / 2, H]],
-      [[2 * tw + 1.5 * g, 0], [2 * tw + 1.5 * g, H]],
-    ];
-  }
-  if (layout === 'collage') {
-    const topH = Math.round(H * 0.58);
-    const botY = topH + g;
-    const heroW = Math.round(W * 0.62);
-    const smallW = (W - heroW - g) / 2;
-    const bw = (W - 2 * g) / 3;
-    return [
-      [[0, topH + g / 2], [W, topH + g / 2]],
-      [[heroW + g / 2, 0], [heroW + g / 2, topH]],
-      [[heroW + smallW + 1.5 * g, 0], [heroW + smallW + 1.5 * g, topH]],
-      [[bw + g / 2, botY], [bw + g / 2, H]],
-      [[2 * bw + 1.5 * g, botY], [2 * bw + 1.5 * g, H]],
-    ];
-  }
-  if (layout === 'spotlight') return [];
+  const stripH = Math.round(H * 0.085);
+  const bodyH = H - stripH - g;
+  const heroW = Math.round(W * 0.58);
+  const rightX = heroW + g;
+  const rh = (bodyH - 2 * g) / 3;
   return [
-    [[W * 0.36, 0], [W * 0.30, H]],
-    [[W * 0.68, 0], [W * 0.62, H]],
+    [[heroW + g / 2, 0], [heroW + g / 2, bodyH]],
+    [[rightX, rh + g / 2], [W, rh + g / 2]],
+    [[rightX, 2 * rh + 1.5 * g], [W, 2 * rh + 1.5 * g]],
+    [[0, bodyH + g / 2], [W, bodyH + g / 2]],
   ];
 }
 
@@ -390,10 +288,7 @@ function photoFilter(grade, contrast, saturation) {
   const s = (saturation || 1).toFixed(2);
   if (grade === 'neon') return `saturate(${(s * 1.3).toFixed(2)}) contrast(${(c * 1.08).toFixed(2)}) brightness(1.03)`;
   if (grade === 'vice') return `saturate(${(s * 0.85).toFixed(2)}) contrast(${c}) hue-rotate(-14deg) brightness(0.97)`;
-  if (grade === 'golden') return `saturate(${(s * 1.15).toFixed(2)}) contrast(${c}) sepia(0.28) brightness(1.06)`;
-  if (grade === 'noir') return `grayscale(1) contrast(${(c * 1.18).toFixed(2)}) brightness(1.02)`;
-  if (grade === 'teal') return `saturate(${s}) contrast(${c}) hue-rotate(8deg) brightness(1.02)`;
-  return `saturate(${s}) contrast(${c}) brightness(1.02)`;
+  return `saturate(${(s * 1.15).toFixed(2)}) contrast(${c}) sepia(0.28) brightness(1.06)`;
 }
 
 /** Grade tint washed over the whole frame after the panels are painted. */
@@ -401,32 +296,50 @@ function gradeWash(ctx, grade, strength, W, H) {
   if (strength <= 0) return;
   const a = strength;
   let stops;
-  let mode = 'soft-light';
-  if (grade === 'sunset') stops = ['rgba(255,140,50,0.30)', 'rgba(255,70,110,0.22)', 'rgba(110,40,160,0.26)'];
-  else if (grade === 'neon') stops = ['rgba(255,0,140,0.34)', 'rgba(150,40,255,0.22)', 'rgba(0,220,255,0.34)'];
-  else if (grade === 'golden') stops = ['rgba(255,190,60,0.36)', 'rgba(255,150,30,0.24)', 'rgba(180,90,10,0.30)'];
-  else if (grade === 'noir') stops = ['rgba(255,255,255,0.10)', 'rgba(128,128,128,0.06)', 'rgba(0,0,0,0.28)'];
-  else if (grade === 'teal') stops = ['rgba(0,220,200,0.26)', 'rgba(20,120,160,0.18)', 'rgba(255,60,140,0.22)'];
-  else stops = ['rgba(90,40,180,0.34)', 'rgba(40,60,200,0.20)', 'rgba(10,40,120,0.38)'];
+  if (grade === 'neon') stops = ['rgba(255,0,140,0.34)', 'rgba(150,40,255,0.22)', 'rgba(0,220,255,0.34)'];
+  else if (grade === 'vice') stops = ['rgba(90,40,180,0.34)', 'rgba(40,60,200,0.20)', 'rgba(10,40,120,0.38)'];
+  else stops = ['rgba(255,190,60,0.36)', 'rgba(255,150,30,0.24)', 'rgba(180,90,10,0.30)'];
+  const scaled = stops.map((st) => {
+    const m = st.match(/([\d.]+)\)$/);
+    const v = parseFloat(m[1]) * a;
+    return st.replace(/[\d.]+\)$/, `${v.toFixed(3)})`);
+  });
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, stops[0].replace(/[\d.]+\)$/, `${(parseFloat(stops[0].match(/[\d.]+\)$/)[0]) * a).toFixed(3)})`));
-  g.addColorStop(0.55, stops[1].replace(/[\d.]+\)$/, `${(parseFloat(stops[1].match(/[\d.]+\)$/)[0]) * a).toFixed(3)})`));
-  g.addColorStop(1, stops[2].replace(/[\d.]+\)$/, `${(parseFloat(stops[2].match(/[\d.]+\)$/)[0]) * a).toFixed(3)})`));
-  ctx.globalCompositeOperation = mode;
+  g.addColorStop(0, scaled[0]);
+  g.addColorStop(0.55, scaled[1]);
+  g.addColorStop(1, scaled[2]);
+  ctx.globalCompositeOperation = 'soft-light';
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
 }
 
+/** A five-pointed star path, centred at (cx, cy) with radius r. */
+function starPath(ctx, cx, cy, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rr = i % 2 === 0 ? r : r * 0.42;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const px = cx + rr * Math.cos(a);
+    const py = cy + rr * Math.sin(a);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
 /** GTA wanted-level HUD: N solid gold stars on a dark pill. Drawn as crisp
  *  vector shapes (never part of a photo) so the stars stay countable at any
- *  export size. rightX is the pill's right edge — by default the frame's
- *  top-right corner; the cover anchors it to the hero panel's top-right so
- *  it never covers the stacked right-column panels. */
+ *  export size. rightX is the pill's right edge — the cover anchors it to
+ *  the hero panel's top-right so it never covers the stacked right-column
+ *  panels. */
 export function drawWantedStars(ctx, W, H, count, rightX) {
   const n = Math.max(0, Math.min(5, Math.round(count || 0)));
   if (n === 0) return;
-  const starR = Math.max(14, Math.round(H * 0.038));
+  // Size the stars by the SHORTER side, so a tall portrait frame does not
+  // get a pill that swallows the whole hero width.
+  const ref = Math.min(W, H);
+  const starR = Math.max(14, Math.round(ref * 0.038));
   const gap = Math.round(starR * 0.45);
   const padX = Math.round(starR * 0.9);
   const padY = Math.round(starR * 0.55);
@@ -442,22 +355,10 @@ export function drawWantedStars(ctx, W, H, count, rightX) {
   ctx.roundRect(x0, y0, pillW, pillH, pillH / 2);
   ctx.fill();
   ctx.stroke();
-  const star = (cx, cy, r) => {
-    ctx.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const rr = i % 2 === 0 ? r : r * 0.42;
-      const a = -Math.PI / 2 + (i * Math.PI) / 5;
-      const px = cx + rr * Math.cos(a);
-      const py = cy + rr * Math.sin(a);
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-  };
   for (let i = 0; i < n; i++) {
     const cx = x0 + padX + starR + i * (starR * 2 + gap);
     const cy = y0 + pillH / 2;
-    star(cx, cy, starR);
+    starPath(ctx, cx, cy, starR);
     ctx.fillStyle = '#ffc93c';
     ctx.fill();
     ctx.strokeStyle = 'rgba(10,4,20,0.9)';
@@ -491,7 +392,7 @@ function tagPill(ctx, text, x, y, H, align = 'left') {
   return bx + tw + padX * 2;
 }
 
-/** Location + time label: dark pill, gold time, white place. */
+/** Location + time label: dark pill, white place, gold time. */
 function placeLabel(ctx, place, time, x, y, H, align = 'right') {
   const fs = Math.max(12, Math.round(H * 0.026));
   ctx.font = `${fs}px ${BODY_FONT}`;
@@ -543,22 +444,10 @@ function heatBadge(ctx, x, y, H) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, bx + padX, y + pillH / 2 + 1);
-  const star = (cx, cy, r) => {
-    ctx.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const rr = i % 2 === 0 ? r : r * 0.42;
-      const a = -Math.PI / 2 + (i * Math.PI) / 5;
-      const px = cx + rr * Math.cos(a);
-      const py = cy + rr * Math.sin(a);
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fill();
-  };
   for (let i = 0; i < 5; i++) {
     const cx = bx + padX + tw + starR + i * (starR * 2 + gap);
-    star(cx, y + pillH / 2, starR);
+    starPath(ctx, cx, y + pillH / 2, starR);
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -685,7 +574,6 @@ function drawHeadline(ctx, state, W, H, hero) {
     ctx.fillStyle = grad;
     ctx.fillText(text, cx, baseY);
     ctx.shadowBlur = 0;
-    ctx.fillStyle = grad;
     ctx.fillText(text, cx, baseY);
   } else {
     ctx.shadowColor = color;
@@ -697,7 +585,7 @@ function drawHeadline(ctx, state, W, H, hero) {
   }
   if (sub) {
     // Script subtitle: slanted, pink, overlapping the headline's baseline.
-    const subY = top ? baseY + gap + subSize : baseY + gap + subSize;
+    const subY = baseY + gap + subSize;
     ctx.save();
     ctx.translate(cx, subY);
     ctx.transform(1, 0, -0.22, 1, 0, 0);
@@ -770,18 +658,22 @@ function drawBottomStrip(ctx, state, W, H) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const strip = (state.stripText || '').toUpperCase();
-  const tw = ctx.measureText(strip).width;
   ctx.fillText(strip, W / 2, y0 + stripH * 0.36);
   // Billing line + barcode along the very bottom — truncate the billing
-  // text so it never runs under the VOL tag or the barcode.
+  // text so it never runs under the VOL tag or the barcode. The VOL tag is
+  // right-aligned ending at volX, so the billing must stop before the tag's
+  // left edge, with a gap.
   const bfs = Math.max(9, Math.round(stripH * 0.22));
   const bw = Math.round(W * 0.075);
   const volX = W - bw - Math.round(W * 0.03);
+  ctx.font = `${bfs}px ${BODY_FONT}`;
+  const volW = ctx.measureText('VOL. 06').width;
+  const gap = Math.round(W * 0.03);
   ctx.font = `${bfs}px ${SUB_FONT}`;
   ctx.textAlign = 'left';
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
   let billing = (state.billingText || '').toUpperCase();
-  const maxBilling = volX - Math.round(W * 0.02) - Math.round(W * 0.06);
+  const maxBilling = volX - volW - gap - Math.round(W * 0.02);
   while (billing.length > 4 && ctx.measureText(billing).width > maxBilling) {
     billing = billing.slice(0, -1);
   }
@@ -833,16 +725,7 @@ function drawStickers(ctx, state, W, H) {
       }
     } else if (s.type === 'star') {
       ctx.fillStyle = '#ffc93c';
-      ctx.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const rr = i % 2 === 0 ? r : r * 0.45;
-        const a = -Math.PI / 2 + (i * Math.PI) / 5;
-        const px = rr * Math.cos(a);
-        const py = rr * Math.sin(a);
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
+      starPath(ctx, 0, 0, r);
       ctx.fill();
     } else if (s.type === 'flame') {
       ctx.fillStyle = '#ff6a00';

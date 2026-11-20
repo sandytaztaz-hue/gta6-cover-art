@@ -1,11 +1,11 @@
-// VICE PURSUIT — screenshot runner (rebuild r7).
+// VICE PURSUIT — screenshot runner (rebuild r8, photo edition).
 //
 // Serves app/ with serve.ts, drives headless Chrome over its DevTools
-// protocol (plain WebSocket, no library), opens each ?shot= URL from
-// shots.json, waits for window.__shotReady, and saves a JPEG into
-// screenshots/. Covers are the PNGs the app itself wrote, shown full-bleed
-// and captured to JPEG. Profile cleanup is best-effort: Chrome is killed
-// first and may still hold files.
+// protocol (plain WebSocket from Node's standard library, no packages),
+// opens each ?shot= URL from shots.json, waits for window.__shotReady,
+// and saves a JPEG into screenshots/. Covers are the PNGs the app itself
+// wrote, shown full-bleed and captured to JPEG. If a JPEG lands over the
+// 256 KiB cap, the quality steps down and the shot is retaken.
 //
 //   node tools/shot.mjs [--port 8123] [--quality 85]
 //
@@ -21,11 +21,13 @@ const CHROME = '/home/hatch/.cache/puppeteer/chrome/linux-157.0.8103.50/chrome-l
 const MAX_BYTES = 262144;
 
 const here = fileURLToPath(new URL('..', import.meta.url));
-const args = process.argv.slice(2);
-const portIndex = args.indexOf('--port');
-const port = portIndex === -1 ? 8123 : Number(args[portIndex + 1]);
-const qualityIndex = args.indexOf('--quality');
-const startQuality = qualityIndex === -1 ? 85 : Number(args[qualityIndex + 1]);
+const argv = process.argv.slice(2);
+const pick = (flag, fallback) => {
+  const i = argv.indexOf(flag);
+  return i === -1 ? fallback : Number(argv[i + 1]);
+};
+const port = pick('--port', 8123);
+const startQuality = pick('--quality', 85);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -41,7 +43,7 @@ async function waitFor(fn, timeoutMs, label) {
   }
 }
 
-/** Minimal CDP client over Node's built-in WebSocket. */
+/** Smallest useful CDP client over Node's built-in WebSocket. */
 class Cdp {
   constructor(url) {
     this.ws = new WebSocket(url);
@@ -50,17 +52,14 @@ class Cdp {
     this.ws.onmessage = (event) => {
       let msg;
       try { msg = JSON.parse(event.data); } catch { return; }
-      if (msg.id !== undefined && this.pending.has(msg.id)) {
+      if (msg.id && this.pending.has(msg.id)) {
         const { resolve, reject } = this.pending.get(msg.id);
         this.pending.delete(msg.id);
         if (msg.error) reject(new Error(msg.error.message));
         else resolve(msg.result);
       }
     };
-  }
-
-  ready() {
-    return new Promise((resolve, reject) => {
+    this.open = new Promise((resolve, reject) => {
       this.ws.onopen = resolve;
       this.ws.onerror = reject;
     });
@@ -74,10 +73,9 @@ class Cdp {
     });
   }
 
-  async eval(expression) {
+  async evalJs(expression) {
     const r = await this.send('Runtime.evaluate', { expression, returnByValue: true });
-    if (r.exceptionDetails) throw new Error(`page error: ${JSON.stringify(r.exceptionDetails)}`);
-    return r.result.value;
+    return r?.result?.value;
   }
 
   close() {
@@ -85,9 +83,19 @@ class Cdp {
   }
 }
 
+/** Read the shot list: [{ name, query, w, h }]. */
+function loadShots() {
+  const raw = readFileSync(join(here, 'shots.json'), 'utf8');
+  const list = JSON.parse(raw);
+  if (!Array.isArray(list) || !list.length) throw new Error('shots.json is empty');
+  return list;
+}
+
 // ---------------------------------------------------------------- run
 
-async function takeShot(shot, baseUrl) {
+/** One shot: launch a throwaway Chrome, open the ?shot= URL, wait for the
+ *  ready flag, capture a JPEG, stepping the quality down if it is too big. */
+async function capture(shot, baseUrl) {
   const profile = mkdtempSync(join(tmpdir(), 'vice-shot-'));
   const chrome = spawn(CHROME, [
     '--headless=new',
@@ -99,7 +107,7 @@ async function takeShot(shot, baseUrl) {
     'about:blank',
   ], { stdio: 'ignore' });
   try {
-    await waitFor(
+    const version = await waitFor(
       async () => {
         const res = await fetch('http://127.0.0.1:9222/json/version');
         if (!res.ok) throw new Error('devtools not up');
@@ -108,6 +116,7 @@ async function takeShot(shot, baseUrl) {
       20000,
       'chrome devtools',
     );
+    void version;
     const targetRes = await fetch(
       `http://127.0.0.1:9222/json/new?${encodeURIComponent(baseUrl + shot.query)}`,
       { method: 'PUT' },
@@ -115,7 +124,7 @@ async function takeShot(shot, baseUrl) {
     if (!targetRes.ok) throw new Error(`could not open target (${targetRes.status})`);
     const target = await targetRes.json();
     const cdp = new Cdp(target.webSocketDebuggerUrl);
-    await cdp.ready();
+    await cdp.open;
     try {
       await cdp.send('Page.enable');
       await cdp.send('Runtime.enable');
@@ -124,11 +133,11 @@ async function takeShot(shot, baseUrl) {
       });
       await cdp.send('Page.navigate', { url: baseUrl + shot.query });
       await waitFor(
-        async () => (await cdp.eval('window.__shotReady === true')) === true,
+        async () => (await cdp.evalJs('window.__shotReady === true')) === true,
         30000,
         `__shotReady for ${shot.name}`,
       );
-      // One frame to settle after the ready flag, so the paint is complete.
+      // One beat to settle after the ready flag, so the paint is complete.
       await sleep(400);
       let quality = startQuality;
       for (;;) {
@@ -156,7 +165,7 @@ async function takeShot(shot, baseUrl) {
   }
 }
 
-const shots = JSON.parse(readFileSync(join(here, 'shots.json'), 'utf8'));
+const shots = loadShots();
 const server = spawn(
   process.execPath,
   [join(here, 'serve.ts'), '--port', String(port)],
@@ -173,7 +182,7 @@ try {
   );
   const baseUrl = `http://127.0.0.1:${port}/`;
   for (const shot of shots) {
-    await takeShot(shot, baseUrl);
+    await capture(shot, baseUrl);
   }
   console.log('all shots taken');
 } finally {

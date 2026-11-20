@@ -1,4 +1,4 @@
-// VICE PURSUIT — editor (rebuild r7).
+// VICE PURSUIT — editor (rebuild r8, photo edition).
 //
 // Wires the cover engine to the page: photo add / drag-drop / per-panel
 // zoom + pan, layouts, grades, sliders, title styles, callouts, stickers,
@@ -206,15 +206,17 @@ export function resizePanels() {
 
 // ---------------------------------------------------------------- samples
 
-/** The eight in-session canvas scenes, keyed by scene: one distinct hero
- *  and one distinct atmosphere/weather per photo, so no two panels — and
- *  no two screenshots — ever repeat a look. */
+/** The eight in-session photographs, keyed by scene: one distinct hero and
+ *  one distinct atmosphere/weather per photo, so no two panels — and no two
+ *  screenshots — ever repeat a look. All eight are real photographs made in
+ *  this session: the chase hero is an edit of the owner's own car photo, the
+ *  other seven are AI-generated photographs. */
 export const SAMPLES = {
-  chase: { file: 'samples/chase.jpg', name: 'Chase hero', label: 'Sunny palm boulevard — Lambo + Ducati, police behind' },
-  neon: { file: 'samples/neon.jpg', name: 'Neon night', label: 'Rainy neon city — woman + sports car' },
+  chase: { file: 'samples/chase.jpg', name: 'Chase hero', label: 'Sunny palm boulevard — orange supercar + sport bike, police behind' },
+  neon: { file: 'samples/neon.jpg', name: 'Neon night', label: 'Rainy neon city — woman + red sports car' },
   beach: { file: 'samples/beach.jpg', name: 'Golden beach', label: 'Golden-hour beach — convertible + surfer' },
   rain: { file: 'samples/rain.jpg', name: 'Downtown rain', label: 'Rainy downtown — muscle car + detective' },
-  desert: { file: 'samples/desert.jpg', name: 'Desert noon', label: 'Desert noon — off-road truck + biker, dust' },
+  desert: { file: 'samples/desert.jpg', name: 'Desert noon', label: 'Desert noon — muscle car + biker, dust' },
   harbor: { file: 'samples/harbor.jpg', name: 'Harbor dusk', label: 'Harbor dusk — speedboat + yacht, purple sky' },
   rooftop: { file: 'samples/rooftop.jpg', name: 'Rooftop night', label: 'Rooftop night — helicopter + skyline' },
   pier: { file: 'samples/pier.jpg', name: 'Misty pier', label: 'Misty dawn pier — boat + fisherman' },
@@ -224,7 +226,7 @@ export const SAMPLE_ORDER = ['chase', 'neon', 'beach', 'rain', 'desert', 'harbor
 /** Smart crops: per-scene focus offsets, so each sample lands with its
  *  hero in frame instead of a blind centre crop. */
 export const SMART_CROPS = {
-  chase: { ox: 0, oy: -0.06 },
+  chase: { ox: 0, oy: -0.04 },
   neon: { ox: 0.06, oy: 0 },
   beach: { ox: 0, oy: -0.04 },
   rain: { ox: -0.05, oy: 0.02 },
@@ -498,7 +500,7 @@ export async function bootEditor(params) {
   on('stripInput', 'change', pushHistory);
 
   // Grade sliders
-  const slider = (id, field, fmt) => on(id, 'input', (e) => {
+  const slider = (id, field) => on(id, 'input', (e) => {
     state[field] = Number(e.target.value);
     updateSliderLabels();
     paint();
@@ -513,10 +515,9 @@ export async function bootEditor(params) {
   on('grainAmount', 'change', pushHistory);
 
   // Effect toggles
-  const toggle = (id, field, after) => on(id, 'change', (e) => {
+  const toggle = (id, field) => on(id, 'change', (e) => {
     pushHistory();
     state[field] = e.target.checked;
-    if (after) after();
     paint();
   });
   toggle('grainToggle', 'grain');

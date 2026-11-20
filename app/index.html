@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VICE PURSUIT STUDIO — GTA-style multi-panel magazine cover maker</title>
-<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel magazine cover. Eight layouts, six grades, full-resolution PNG export — all offline.">
+<meta name="description" content="Turn your photos and a caption into a GTA-style multi-panel magazine cover. Three layouts, three grades, full-resolution PNG export — all offline.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -48,11 +48,6 @@
           <button type="button" data-layout="magazine">Magazine</button>
           <button type="button" data-layout="five">Five panel</button>
           <button type="button" data-layout="hero">Hero + strip</button>
-          <button type="button" data-layout="grid">Grid</button>
-          <button type="button" data-layout="diagonal">Diagonal</button>
-          <button type="button" data-layout="triptych">Triptych</button>
-          <button type="button" data-layout="collage">Collage</button>
-          <button type="button" data-layout="spotlight">Spotlight</button>
         </div>
         <p class="hint" id="layoutHint">Hero left, three stacked right, billing strip below.</p>
       </div>
@@ -84,12 +79,9 @@
       <div class="group">
         <h2>Grade</h2>
         <div class="btn-row" role="group" aria-label="Grade">
-          <button type="button" data-grade="sunset">Sunset</button>
+          <button type="button" data-grade="golden">Golden Hour</button>
           <button type="button" data-grade="neon">Neon</button>
           <button type="button" data-grade="vice">Vice Night</button>
-          <button type="button" data-grade="golden">Golden Hour</button>
-          <button type="button" data-grade="noir">Noir</button>
-          <button type="button" data-grade="teal">Miami Teal</button>
         </div>
         <label class="field-label" for="intensity">Strength <span id="intensityVal"></span></label>
         <input id="intensity" type="range" min="0" max="1" step="0.05" value="0.75">
@@ -186,7 +178,7 @@
   </main>
 
   <footer class="foot">
-    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). Sample photos are canvas art drawn in this session, not Rockstar artwork and not photos of real people.</p>
+    <p>VICE PURSUIT STUDIO — your photos stay on your device. No uploads, no accounts, no network. Fonts: Bebas Neue, Anton and Archivo Black (SIL Open Font License, shipped under app/fonts/). Sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.</p>
   </footer>
 </div>
 

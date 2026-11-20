@@ -8,10 +8,10 @@ Turn your photos and a caption into a GTA-style multi-panel magazine cover — i
 
 ## What it does
 
-- **8 multi-panel layouts** — Magazine (hero left, three stacked right, billing strip below — the HEATWAVE look), Five panel (1 hero + 4 small), Hero + strip (1 big + 3 small), Grid (2×2), Diagonal (3 slanted panels), Triptych (3 tall panels), Collage (hero + 5 mosaic), Spotlight (one full-bleed photo). Every panel is a drop zone.
+- **3 multi-panel layouts** — Magazine (hero left, three stacked right, billing strip below — the HEATWAVE look), Five panel (1 hero + 4 small), Hero + strip (1 big + 3 small). Every panel is a drop zone.
 - **Any photo, any panel** — add photos from your device, drag-drop onto a panel, or load the built-in samples. One photo can fill all panels with different smart crops; each panel gets its own drag-to-position, zoom slider, and fit/cover switch, plus per-panel replace and clear.
 - **Magazine furniture** — a giant gradient headline (orange → pink → purple, like a magazine masthead) with a pink script sub-caption, role tags (THE CLOSER, THE DRIVER, THE FIXER…), location + time labels (CORAL CAUSEWAY · 7:15 PM), a HEAT ★★★★★ badge, a HOT starburst seal, an EST. 2026 seal, a newspaper quote ("HOTTER THAN THE ASPHALT" — THE PALM GAZETTE), the five-star GTA wanted HUD, and a bottom billing strip with VOL. 06 and a barcode. Every piece toggles on and off.
-- **6 canvas grades** — Sunset, Neon, Vice Night, Golden Hour, Noir, Miami Teal, each with strength, contrast and saturation sliders, plus film grain (seeded, so exports are deterministic), vignette and halftone print dots.
+- **3 canvas grades** — Golden Hour, Neon, Vice Night, each with strength, contrast and saturation sliders, plus film grain (seeded, so exports are deterministic), vignette and halftone print dots.
 - **Title styles** — gradient fill, solid fill, or outline-only, in five colours, top or bottom.
 - **Stickers** — sun, palm, star, flame and badge marks you can drop on the cover.
 - **Undo / redo** — full history (Ctrl/Cmd+Z, Ctrl/Cmd+Y), 60 steps deep.
@@ -44,15 +44,14 @@ The covers are the PNGs the app itself wrote, scaled to JPEG for size. `shots.js
 - `app/src/main.js` — editor state, controls, drag-drop, per-panel zoom/pan, smart crops, undo/redo, export
 - `app/src/shots.js` — deterministic `?shot=cover` / `?shot=editor` states
 - `app/fonts/` — Bebas Neue, Anton, Archivo Black (SIL Open Font License, OFL.txt beside each)
-- `app/samples/` — eight canvas paintings drawn in this session with headless Chrome (`tools/samples.html` + `tools/render-samples.mjs`), one distinct hero and one distinct atmosphere/weather each: the sunny palm-boulevard chase (orange supercar + sport bike, police interceptor and a second bike chasing behind), a rainy neon night with a woman in sunglasses and a red sports car, a golden-hour beach with a convertible and a surfer, a rainy downtown with a muscle car and a detective, a desert noon with an off-road truck and a biker in the dust, a harbor dusk with a speedboat and a yacht, a rooftop night with a helicopter and a skyline, and a misty dawn fishing pier with a boat and a fisherman
+- `app/samples/` — eight photographs made in this session, one distinct hero and one distinct atmosphere/weather each: the sunny palm-boulevard chase (orange supercar + sport bike, police interceptor and a second bike chasing behind), a rainy neon night with a woman in sunglasses and a red sports car, a golden-hour beach with a convertible and a surfer, a rainy downtown with a muscle car and a detective, a desert noon with a muscle car and a biker in the dust, a harbor dusk with a speedboat and a yacht, a rooftop night with a helicopter and a skyline, and a misty dawn fishing pier with a boat and a fisherman
 - `main.ts` — hands app/ + screenshots/ to /output with dossier.json (Node 22 stdlib only)
 - `serve.ts` — tiny static server for local tries
 - `tools/shot.mjs` — deterministic screenshot runner (headless Chrome over CDP)
-- `tools/render-samples.mjs` + `tools/samples.html` — the in-session sample renderer
 
 ## Notes
 
 - Everything runs offline: fonts and samples are local files, and the app makes no network requests.
 - No Rockstar logo, artwork or font anywhere; the name "VICE PURSUIT STUDIO" is our own, and "VICE PURSUIT" is our own headline.
-- The sample photos are canvas art drawn in this session, not Rockstar artwork and not photos of real people.
+- The sample photos are photographs made in this session, not Rockstar artwork and not photos of real people.
 - No wallet, password or seed prompts, no cookies, no service worker, no `eval`.

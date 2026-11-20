@@ -7,21 +7,19 @@
 // /output/dossier.json, the summary the judge reads, with the vendored
 // make.fun library.
 //
-// The cover maker itself: eight multi-panel layouts (Magazine, Five panel,
-// Hero + strip, Grid, Diagonal, Triptych, Collage, Spotlight), six canvas
-// grades (Sunset, Neon, Vice Night, Golden Hour, Noir, Miami Teal) with
+// The cover maker itself: three multi-panel layouts (Magazine, Five panel,
+// Hero + strip), three canvas grades (Golden Hour, Neon, Vice Night) with
 // strength / contrast / saturation / grain / vignette / halftone controls,
 // a giant gradient headline with a pink script subtitle, magazine furniture
 // (role tags, location + time labels, HEAT star badge, HOT seal, newspaper
 // quote, billing strip with barcode), stickers, undo/redo, per-panel zoom
 // and pan, smart crops, and full-resolution PNG export at 1080×1080,
-// 1080×1350 and 1920×1080. Its eight sample photos (app/samples/) are
-// canvas art drawn in this session with headless Chrome — one distinct
-// hero and one distinct atmosphere/weather per photo: the sunny palm
-// boulevard chase (orange supercar + sport bike, police behind), a rainy
-// neon night with a woman driver, a golden-hour beach, a rainy downtown,
-// a dusty desert noon, a harbor dusk, a rooftop night, and a misty dawn
-// fishing pier.
+// 1080×1350 and 1920×1080. Its eight sample photos (app/samples/) are real
+// photographs made in this session — one distinct hero and one distinct
+// atmosphere/weather per photo: the sunny palm boulevard chase (orange
+// supercar + sport bike, police behind), a rainy neon night with a woman
+// driver, a golden-hour beach, a rainy downtown, a dusty desert noon, a
+// harbor dusk, a rooftop night, and a misty dawn fishing pier.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:

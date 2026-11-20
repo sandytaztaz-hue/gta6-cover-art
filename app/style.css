@@ -15,6 +15,13 @@
   font-display: swap;
 }
 @font-face {
+  font-family: "Great Vibes";
+  src: url("fonts/GreatVibes-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "Bebas Neue";
   src: url("fonts/BebasNeue-Regular.ttf") format("truetype");
   font-weight: 400;
@@ -262,15 +269,14 @@ body {
 .gm-cover[data-grade="vice"] .gm-title { background: linear-gradient(90deg, #ff2e88, #2ee6c8); -webkit-background-clip: text; background-clip: text; }
 .gm-cover[data-grade="noir"] .gm-title { background: linear-gradient(90deg, #ff5c8a, #ffd23e); -webkit-background-clip: text; background-clip: text; }
 .gm-script {
-  /* Palmline style: big, white-outlined, slanted, overlapping the
-     bottom of the title — mirrors the canvas draw in cover.js. */
-  margin: -5.5% 0 0; color: #ff5fa8;
-  font-family: "Segoe Script", "Snell Roundhand", cursive; font-style: italic;
-  font-size: 7.3cqw; line-height: 1.1;
-  transform: skewX(-8deg);
-  -webkit-text-stroke: 0.45cqw #ffffff;
-  paint-order: stroke fill;
-  text-shadow: 0 0.4cqw 1cqw rgba(0, 0, 0, 0.8);
+  /* Palmline/Golden Mile style: THIN delicate flowing cursive, small
+     accent, strongly slanted (~25 deg), soft light-pink glow only —
+     NO white outline — mirrors the canvas draw in cover.js. */
+  margin: -5.5% 0 0; color: #ffa8cc;
+  font-family: "Great Vibes", cursive; font-style: normal;
+  font-size: 5.2cqw; line-height: 1.1;
+  transform: skewX(-25deg);
+  text-shadow: 0 0 0.9cqw rgba(255, 143, 192, 0.75), 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.6);
 }
 .gm-ribbon {
   display: inline-block; margin-top: 2.2%;

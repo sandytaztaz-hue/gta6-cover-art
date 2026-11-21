@@ -1,426 +1,404 @@
-// GOLDEN MILE — cover model, geometry and PNG renderer for the
-// VICE PURSUIT cover studio. One cover is a magazine collage: a masthead
-// strip, a five-column photo grid with one big hero close-up in the
-// centre, a title band of its own across the middle, and a bottom strip
-// with COMING SOON, credits, a barcode and a gold BEST seal.
-//
-// The same geometry drives the live DOM preview (main.js) and the PNG
-// export below, so what you see is exactly what you download.
+// VICE PURSUIT — cover renderer.
+// Draws the whole magazine cover (masthead, photo collage, title block,
+// ribbon, gold seal, footer) onto a canvas from the editor state.
+// All geometry is derived from the canvas size, so the same painter serves
+// the square, portrait and wide exports and the live preview.
 
-export const GOLDEN_MILE_TITLE = 'VICE PURSUIT';
-export const GOLDEN_MILE_SCRIPT = 'Coastline Nights';
-export const GOLDEN_MILE_RIBBON = 'ONE COASTLINE · FIVE STORIES · NO CURFEW';
-export const GOLDEN_MILE_TAGLINE = 'THE HOTTEST RIDE OF THE YEAR';
-export const GOLDEN_MILE_GAZETTE = 'VICE CITY GAZETTE';
-export const GOLDEN_MILE_CREDITS =
-  'GOLDEN MILE PICTURES  ·  A VICE CITY STORY';
-
-// The eight Golden Mile pictures: the hero close-up in the centre plus
-// one photo-realistic panel per role. fx/fy is the face (or subject)
-// point the crop keeps centred, as a fraction of the photo.
-export const GOLDEN_MILE_PANELS = [
-  { role: 'THE DRIVER', file: 'vice-driver.jpg', fx: 0.8, fy: 0.38 },
-  { role: 'THE FIXER', file: 'vice-fixer.jpg', fx: 0.74, fy: 0.22 },
-  { role: 'HERO', file: 'crime-insider.jpg', fx: 0.56, fy: 0.4 },
-  { role: 'THE SMUGGLER', file: 'vice-everglades.jpg', fx: 0.3, fy: 0.6 },
-  { role: 'THE BOSS', file: 'dark-market.jpg', fx: 0.5, fy: 0.44 },
-  { role: 'THE RIDER', file: 'runners-rider.jpg', fx: 0.68, fy: 0.38 },
-  { role: 'THE GETAWAY', file: 'vice-chase.jpg', fx: 0.38, fy: 0.56 },
-  { role: 'THE LOOKOUT', file: 'crime-lookout.jpg', fx: 0.5, fy: 0.28 },
+export const PANEL_DEFS = [
+  { id: 'driver', label: 'THE DRIVER', src: 'samples/vice-driver.jpg', fx: 0.72, fy: 0.38, labelAt: 'bottom' },
+  { id: 'fixer', label: 'THE FIXER', src: 'samples/vice-fixer.jpg', fx: 0.68, fy: 0.32, labelAt: 'bottom' },
+  { id: 'hero', label: '', src: 'samples/crime-insider.jpg', fx: 0.5, fy: 0.3, labelAt: 'none' },
+  { id: 'smuggler', label: 'THE SMUGGLER', src: 'samples/vice-everglades.jpg', fx: 0.3, fy: 0.62, labelAt: 'bottom' },
+  { id: 'boss', label: 'THE BOSS', src: 'samples/dark-market.jpg', fx: 0.55, fy: 0.45, labelAt: 'top' },
+  { id: 'rider', label: 'THE RIDER', src: 'samples/runners-rider.jpg', fx: 0.62, fy: 0.5, labelAt: 'bottom' },
+  { id: 'getaway', label: 'THE GETAWAY', src: 'samples/vice-chase.jpg', fx: 0.28, fy: 0.55, labelAt: 'bottom' },
+  { id: 'lookout', label: 'THE LOOKOUT', src: 'samples/crime-lookout.jpg', fx: 0.5, fy: 0.32, labelAt: 'bottom' },
 ];
 
-// Grid placement of the eight panels, in a 5-column by 2-row grid.
-// The hero sits in the middle column and spans both rows; the boss
-// fills the whole right-hand column. Every other role takes one cell.
-export const GOLDEN_MILE_GRID = {
-  'THE DRIVER': { col: 1, row: 1, colSpan: 1, rowSpan: 1 },
-  'THE FIXER': { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-  HERO: { col: 3, row: 1, colSpan: 1, rowSpan: 2 },
-  'THE SMUGGLER': { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
-  'THE BOSS': { col: 5, row: 1, colSpan: 1, rowSpan: 2 },
-  'THE RIDER': { col: 1, row: 2, colSpan: 1, rowSpan: 1 },
-  'THE GETAWAY': { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-  'THE LOOKOUT': { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
+export const SAMPLES = [
+  'crime-getaway', 'crime-insider', 'crime-lookout', 'dark-driver',
+  'dark-market', 'dark-ride', 'dark-sky', 'runners-boat', 'runners-diner',
+  'runners-overlook', 'runners-pickup', 'runners-rider', 'runners-skater',
+  'vice-canyon', 'vice-chase', 'vice-driver', 'vice-everglades', 'vice-fixer',
+];
+
+export const GRADES = {
+  'golden-hour': { name: 'Golden Hour', dot: '#ff8a2a', tint: '#ff7a1a', tintAlpha: 0.1, blend: 'overlay', titleFrom: '#ff4d6d', titleTo: '#ff8a00', subhead: '#ff7ad9' },
+  'neon-nights': { name: 'Neon Nights', dot: '#b04dff', tint: '#c44dff', tintAlpha: 0.13, blend: 'overlay', titleFrom: '#ff2e88', titleTo: '#c44dff', subhead: '#ff8af0' },
+  'dusk-purple': { name: 'Dusk Purple', dot: '#8a4dff', tint: '#7a3cff', tintAlpha: 0.15, blend: 'overlay', titleFrom: '#e06bff', titleTo: '#ff5e8a', subhead: '#ff9ae2' },
+  'vice-teal': { name: 'Vice Teal', dot: '#2ee6c8', tint: '#14b8a6', tintAlpha: 0.12, blend: 'overlay', titleFrom: '#2ee6c8', titleTo: '#ff7a3c', subhead: '#7ef0d4' },
+  'noir': { name: 'Noir', dot: '#555555', tint: '#000000', tintAlpha: 0.12, blend: 'multiply', titleFrom: '#f5f5f5', titleTo: '#c9c9c9', subhead: '#e8e8e8', desaturate: true },
 };
 
-// Five colour grades. `filter` is a canvas/DOM filter string, `wash`
-// a translucent tint painted over each photo, `title` the two stops of
-// the title gradient for this grade.
-export const GOLDEN_MILE_GRADES = {
-  golden: {
-    label: 'Golden Hour',
-    filter: 'saturate(1.28) contrast(1.07) sepia(0.26) brightness(1.02)',
-    wash: 'rgba(255,140,40,0.10)',
-    title: ['#ff2e88', '#ffb03a'],
-  },
-  neon: {
-    label: 'Neon Nights',
-    filter: 'saturate(1.65) contrast(1.12) hue-rotate(-14deg) brightness(1.0)',
-    wash: 'rgba(255,0,120,0.10)',
-    title: ['#ff2ea6', '#ff5e3a'],
-  },
-  dusk: {
-    label: 'Dusk Purple',
-    filter: 'saturate(1.18) contrast(1.06) hue-rotate(16deg) brightness(0.94)',
-    wash: 'rgba(96,44,168,0.14)',
-    title: ['#ff4fa3', '#c77dff'],
-  },
-  vice: {
-    label: 'Vice Teal',
-    filter: 'saturate(1.38) contrast(1.1) brightness(1.01)',
-    wash: 'rgba(0,205,180,0.08)',
-    title: ['#ff2e88', '#2ee6c8'],
-  },
-  noir: {
-    label: 'Noir',
-    filter: 'grayscale(0.55) contrast(1.28) brightness(0.96)',
-    wash: 'rgba(0,0,0,0.08)',
-    title: ['#ff5c8a', '#ffd23e'],
-  },
+export const SIZES = {
+  square: { name: 'Square', w: 1080, h: 1080, label: 'Square · 1080 × 1080' },
+  portrait: { name: 'Portrait', w: 1080, h: 1350, label: 'Portrait · 1080 × 1350' },
+  wide: { name: 'Wide', w: 1920, h: 1080, label: 'Wide · 1920 × 1080' },
 };
 
-export const GOLDEN_MILE_GRADE_IDS = Object.keys(GOLDEN_MILE_GRADES);
-
-// The three post sizes the bounty asks for.
-export const GOLDEN_MILE_SIZES = {
-  square: { label: 'Square · 1080 × 1080', width: 1080, height: 1080 },
-  portrait: { label: 'Portrait · 1080 × 1350', width: 1080, height: 1350 },
-  landscape: { label: 'Wide · 1920 × 1080', width: 1920, height: 1080 },
-};
-
-// Per-size crop overrides, as deltas on a panel's own fx/fy/zoom. The
-// portrait DRIVER panel is much narrower than the square one, so the
-// default face point (fx 0.8) puts her nose on the panel's left edge;
-// in portrait only, pull the crop back a touch so her whole face sits
-// inside the frame with margin. Deltas (not absolutes) so dragging a
-// panel in the editor still moves it, and so every other panel and
-// size keeps its default crop exactly.
-export const GOLDEN_MILE_CROP_OVERRIDES = {
-  portrait: {
-    // -0.02 moved her nose from cut to ~3 px inside the edge (measured
-    // on the render); -0.04 left the nose ~3 px and the lips ~2 px from
-    // the edge — visible but tighter than the square renders. -0.05
-    // puts the nose ~10 px inside, matching images 1/2/4, with the ear
-    // still ~13 px clear of the right edge.
-    'THE DRIVER': { fx: -0.05 },
-  },
-};
-
-// Resolve the effective { fx, fy, zoom } for one panel at one post size.
-// Both render paths (DOM preview in main.js, PNG export below) must call
-// this, so the screenshot and the exported PNG always agree.
-export function goldenMilePanelCrop(panel, sizeId) {
-  const over = GOLDEN_MILE_CROP_OVERRIDES[sizeId]?.[panel.role];
-  return {
-    fx: Math.min(1, Math.max(0, panel.fx + (over?.fx ?? 0))),
-    fy: Math.min(1, Math.max(0, panel.fy + (over?.fy ?? 0))),
-    zoom: (panel.zoom || 1) * (over?.zoom ?? 1),
-  };
+/** Load one image file; resolves with the element (or null on failure). */
+export function loadImage(path) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = path;
+  });
 }
 
-// Fresh default state: the Golden Mile cover, golden grade, square.
-export function goldenMileDefaultState() {
+/** The cover geometry for a canvas of W × H. */
+export function layoutFor(W, H) {
+  const pad = Math.round(W * 0.009);
+  const mastH = Math.round(H * 0.048);
+  const footH = Math.round(H * 0.082);
+  const gap = Math.max(3, Math.round(W * 0.005));
+  const cx = pad;
+  const cy = pad + mastH + gap;
+  const cw = W - pad * 2;
+  const ch = H - pad * 2 - mastH - footH - gap * 2;
+  const fracs = [0.164, 0.164, 0.344, 0.164, 0.164];
+  const freeW = cw - gap * 4;
+  const colW = fracs.map((f) => Math.round(f * freeW));
+  colW[2] += freeW - colW.reduce((a, b) => a + b, 0);
+  const colX = [];
+  let acc = cx;
+  for (const w of colW) { colX.push(acc); acc += w + gap; }
+  const rowH = (ch - gap) / 2;
+  const rowY = [cy, cy + rowH + gap];
+  const rect = (col, row, rows = 1) => ({
+    x: colX[col], y: rowY[row], w: colW[col], h: rows === 2 ? ch : rowH,
+  });
   return {
-    title: GOLDEN_MILE_TITLE,
-    script: GOLDEN_MILE_SCRIPT,
-    ribbon: GOLDEN_MILE_RIBBON,
-    grade: 'golden',
-    size: 'square',
-    panels: GOLDEN_MILE_PANELS.map((p) => ({
-      role: p.role,
-      src: 'samples/' + p.file,
-      fx: p.fx,
-      fy: p.fy,
-      zoom: 1,
-      flip: false,
-    })),
-  };
-}
-
-// Cover geometry, all in fractions of the cover width/height, so the
-// DOM preview and the canvas export agree exactly.
-export function goldenMileLayout(sizeId) {
-  const wide = sizeId === 'landscape';
-  const tall = sizeId === 'portrait';
-  return {
-    masthead: { x: 0, y: 0, w: 1, h: wide ? 0.052 : tall ? 0.042 : 0.05 },
-    grid: {
-      x: 0.008,
-      y: wide ? 0.062 : tall ? 0.05 : 0.058,
-      w: 0.984,
-      h: wide ? 0.86 : tall ? 0.884 : 0.862,
-      gap: 0.006,
-      cols: [0.16, 0.16, 0.36, 0.16, 0.16],
+    W, H, pad, mastH, footH, gap, cx, cy, cw, ch,
+    panels: {
+      driver: rect(0, 0), fixer: rect(1, 0), hero: rect(2, 0, 2),
+      smuggler: rect(3, 0), boss: rect(4, 0, 2),
+      rider: rect(0, 1), getaway: rect(1, 1), lookout: rect(3, 1),
     },
-    // The title band sits low on the hero's chest, below the chin, so
-    // the lettering never covers a face; it overlaps only the bottom
-    // row of panels, magazine-style. r15f: lowered a touch (Sand 08:42)
-    // so the title clears the hero's chin/jaw with daylight to spare.
-    titleBand: { x: 0, y: wide ? 0.585 : tall ? 0.625 : 0.615, w: 1, h: 0.24 },
-    foot: { x: 0, y: wide ? 0.93 : tall ? 0.942 : 0.928, w: 1, h: 0.072 },
-    seal: { x: 0.885, y: wide ? 0.8 : tall ? 0.845 : 0.815, r: wide ? 0.048 : 0.055 },
+    heroCentreX: colX[2] + colW[2] / 2,
+    titleTop: cy + ch * 0.655,
+    ribbon: { x: colX[1], y: cy + ch * 0.875, w: colX[3] + colW[3] - colX[1], h: Math.round(H * 0.048) },
+    seal: { x: W - pad - W * 0.088, y: cy + ch * 0.93, r: W * 0.058 },
   };
 }
 
-// Rectangle of one grid cell, in pixels, for a cover of W x H.
-export function goldenMileCellRect(layout, W, H, role) {
-  const g = layout.grid;
-  const cell = GOLDEN_MILE_GRID[role];
-  const colW = (i) => g.cols[i] * g.w * W;
-  const rowH = (g.h * H) / 2;
-  let x = g.x * W;
-  for (let i = 0; i < cell.col - 1; i += 1) x += colW(i) + g.gap * W;
-  const y = g.y * H + (cell.row - 1) * (rowH + g.gap * H);
-  let w = 0;
-  for (let i = 0; i < cell.colSpan; i += 1) w += colW(cell.col - 1 + i);
-  w += (cell.colSpan - 1) * g.gap * W;
-  const h = rowH * cell.rowSpan + (cell.rowSpan - 1) * g.gap * H;
-  return { x, y, w, h };
-}
-
-// ---- PNG renderer -------------------------------------------------------
-
-const TITLE_FONT = '"Anton", "Archivo Black", sans-serif';
-const LABEL_FONT = '"Archivo Black", sans-serif';
-const SCRIPT_FONT = '"Great Vibes", cursive';
-
-// Draw one photo into its cell, cover-fitting around the face point.
-function drawGoldenMilePhoto(ctx, img, rect, panel, grade, sizeId) {
-  const crop = goldenMilePanelCrop(panel, sizeId);
-  const iw = img.naturalWidth || img.width;
-  const ih = img.naturalHeight || img.height;
-  const zoom = crop.zoom || 1;
-  const scale = Math.max(rect.w / iw, rect.h / ih) * zoom;
-  const dw = iw * scale;
-  const dh = ih * scale;
-  // Keep the face point at the cell centre as far as the photo allows.
-  const cx = crop.fx * dw;
-  const cy = crop.fy * dh;
-  let dx = rect.x + rect.w / 2 - cx;
-  let dy = rect.y + rect.h / 2 - cy;
-  dx = Math.min(rect.x, Math.max(rect.x + rect.w - dw, dx));
-  dy = Math.min(rect.y, Math.max(rect.y + rect.h - dh, dy));
-  ctx.save();
+function drawStar(ctx, cx, cy, rOuter, rInner) {
   ctx.beginPath();
-  ctx.rect(rect.x, rect.y, rect.w, rect.h);
-  ctx.clip();
-  ctx.filter = grade.filter;
-  if (panel.flip) {
-    ctx.translate(rect.x + rect.w, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(img, dx - rect.x - rect.w, dy, dw, dh);
-  } else {
-    ctx.drawImage(img, dx, dy, dw, dh);
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? rOuter : rInner;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const px = cx + Math.cos(a) * r;
+    const py = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
-  ctx.filter = 'none';
-  ctx.fillStyle = grade.wash;
-  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-  ctx.restore();
-  // Thin gold frame + role chip, bottom-left of the panel.
-  ctx.strokeStyle = 'rgba(255, 210, 90, 0.85)';
-  ctx.lineWidth = Math.max(1.5, rect.w * 0.008);
-  ctx.strokeRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
-  if (panel.role !== 'HERO') {
-    const fs = Math.max(11, rect.w * 0.085);
-    ctx.font = `${fs}px ${LABEL_FONT}`;
-    const tw = ctx.measureText(panel.role).width;
-    const pad = fs * 0.55;
-    const bx = rect.x + rect.w * 0.04;
-    // THE BOSS fills the bottom-right corner of the grid, so a
-    // bottom-left chip would sit under the gold BEST SELLER seal (the
-    // seal spans the panel's whole bottom-left corner) and the ribbon
-    // bar leaves no gap above the seal either. Its chip goes top-left
-    // instead — same pill, same gold text, fully visible.
-    const by =
-      panel.role === 'THE BOSS'
-        ? rect.y + rect.h * 0.04
-        : rect.y + rect.h - fs * 2.1;
-    ctx.fillStyle = 'rgba(10, 4, 12, 0.88)';
-    ctx.fillRect(bx, by, tw + pad * 2, fs * 1.7);
-    ctx.fillStyle = '#ffd23e';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(panel.role, bx + pad, by + fs * 0.85);
-  }
-}
-
-function drawGoldenMileBarcode(ctx, x, y, w, h) {
-  ctx.fillStyle = '#f5f0e6';
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = '#14100c';
-  let bx = x + w * 0.06;
-  const bars = [3, 1, 2, 1, 1, 3, 2, 2, 1, 1, 4, 1, 2, 3, 1, 2, 1, 1, 3, 2];
-  for (const b of bars) {
-    const bw = (w * 0.028) * b;
-    ctx.fillRect(bx, y + h * 0.08, bw, h * 0.72);
-    bx += bw + w * 0.02;
-    if (bx > x + w * 0.94) break;
-  }
-}
-
-function drawGoldenMileSeal(ctx, cx, cy, r) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  const gold = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
-  gold.addColorStop(0, '#ffe98a');
-  gold.addColorStop(0.55, '#f5b81e');
-  gold.addColorStop(1, '#a86e00');
-  ctx.fillStyle = gold;
+  ctx.closePath();
   ctx.fill();
-  ctx.lineWidth = r * 0.07;
-  ctx.strokeStyle = '#7a4d00';
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.8, 0, Math.PI * 2);
-  ctx.lineWidth = r * 0.04;
-  ctx.strokeStyle = 'rgba(122, 77, 0, 0.8)';
-  ctx.stroke();
-  ctx.fillStyle = '#4d2f00';
+}
+
+/** Deterministic pseudo-random bars for the barcode. */
+function barcodeBars(seed, count) {
+  let s = seed;
+  const bars = [];
+  for (let i = 0; i < count; i++) {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    bars.push(1 + (s % 4));
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    bars.push(1 + (s % 3));
+  }
+  return bars;
+}
+
+function coverFitPhoto(ctx, img, rect, frame) {
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  const zoom = frame.zoom || 1;
+  const base = Math.max(rect.w / iw, rect.h / ih) * zoom;
+  const sw = rect.w / base;
+  const sh = rect.h / base;
+  let sx = frame.fx * iw - sw / 2 + (frame.ox || 0) * iw;
+  let sy = frame.fy * ih - sh / 2 + (frame.oy || 0) * ih;
+  sx = Math.max(0, Math.min(iw - sw, sx));
+  sy = Math.max(0, Math.min(ih - sh, sy));
+  ctx.drawImage(img, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h);
+}
+
+function paintPanelLabel(ctx, def, rect, L) {
+  if (def.labelAt === 'none' || !def.label) return;
+  const fs = Math.max(11, Math.round(L.W * 0.0155));
+  ctx.font = `${fs}px "Archivo Black", sans-serif`;
+  const tw = ctx.measureText(def.label).width;
+  const padX = Math.round(fs * 0.45);
+  const padY = Math.round(fs * 0.35);
+  const bw = tw + padX * 2;
+  const bh = fs + padY * 2;
+  const bx = rect.x + 6;
+  const by = def.labelAt === 'top'
+    ? rect.y + Math.round(rect.h * 0.06)
+    : rect.y + rect.h - bh - 6;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.fillStyle = '#f2c14e';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(def.label, bx + padX, by + bh / 2 + 1);
+}
+
+function paintMasthead(ctx, L) {
+  const midY = L.pad + L.mastH / 2;
+  const starR = Math.max(6, L.W * 0.0085);
+  ctx.fillStyle = '#f2c14e';
+  let sx = L.pad + 10 + starR;
+  for (let i = 0; i < 5; i++) {
+    drawStar(ctx, sx, midY, starR, starR * 0.45);
+    sx += starR * 2.4;
+  }
+  const fs = Math.max(11, Math.round(L.W * 0.016));
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.font = `${fs}px "Archivo Black", sans-serif`;
+  try { ctx.letterSpacing = `${Math.round(fs * 0.18)}px`; } catch (e) { /* older canvas */ }
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('THE HOTTEST RIDE OF THE YEAR', sx + 8, midY + 1);
+  try { ctx.letterSpacing = '0px'; } catch (e) { /* ignore */ }
+
+  const badgeText = 'VOL. 1';
+  ctx.font = `${fs}px "Archivo Black", sans-serif`;
+  const badgeW = ctx.measureText(badgeText).width + fs * 1.1;
+  const badgeH = L.mastH * 0.62;
+  const bx = L.W - L.pad - 8 - badgeW;
+  ctx.fillStyle = '#f2c14e';
+  ctx.fillRect(bx, midY - badgeH / 2, badgeW, badgeH);
+  ctx.fillStyle = '#1a1206';
+  ctx.textAlign = 'center';
+  ctx.fillText(badgeText, bx + badgeW / 2, midY + 1);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ff4d8d';
+  ctx.fillText('VICE CITY GAZETTE', bx - 14, midY + 1);
+  ctx.textAlign = 'left';
+}
+
+function paintTitleBlock(ctx, state, grade, L) {
+  const heroX = L.heroCentreX;
+  const targetW = L.W * 0.6;
+  let fs = Math.round(L.W * 0.115);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  const setTitleFont = (size) => { ctx.font = `${size}px Anton, "Archivo Black", sans-serif`; };
+  setTitleFont(fs);
+  const measured = ctx.measureText(state.title || 'VICE PURSUIT').width;
+  if (measured > targetW) fs = Math.max(20, Math.floor(fs * (targetW / measured)));
+  // On short frames (wide covers) the title must also fit the collage height.
+  fs = Math.min(fs, Math.round(L.ch * 0.13));
+  setTitleFont(fs);
+
+  const grad = ctx.createLinearGradient(heroX - targetW / 2, 0, heroX + targetW / 2, 0);
+  grad.addColorStop(0, grade.titleFrom);
+  grad.addColorStop(1, grade.titleTo);
+  const baseY = L.titleTop + fs * 0.78;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+  ctx.shadowBlur = Math.round(fs * 0.1);
+  ctx.shadowOffsetY = Math.round(fs * 0.03);
+  ctx.fillStyle = grad;
+  ctx.fillText(state.title || 'VICE PURSUIT', heroX, baseY);
+  ctx.restore();
+  ctx.lineWidth = Math.max(2, fs * 0.045);
+  ctx.strokeStyle = 'rgba(24, 6, 12, 0.9)';
+  ctx.strokeText(state.title || 'VICE PURSUIT', heroX, baseY);
+
+  // Script subhead — own space below the title, slanted, pink, no white outline.
+  const subFs = Math.round(fs * 0.48);
+  ctx.save();
+  ctx.translate(heroX, baseY + subFs * 1.15);
+  ctx.rotate(-0.14);
+  ctx.font = `${subFs}px "Great Vibes", cursive`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `${r * 0.42}px ${LABEL_FONT}`;
-  ctx.fillText('★ BEST ★', cx, cy - r * 0.2);
-  ctx.font = `${r * 0.34}px ${LABEL_FONT}`;
-  ctx.fillText('SELLER', cx, cy + r * 0.26);
+  ctx.fillStyle = grade.subhead;
+  ctx.fillText(state.subhead || 'Coastline Nights', 0, 0);
+  ctx.lineWidth = Math.max(1, subFs * 0.03);
+  ctx.strokeStyle = grade.subhead;
+  ctx.strokeText(state.subhead || 'Coastline Nights', 0, 0);
+  ctx.restore();
+  // Remember where the script ends so the ribbon never touches it.
+  L.subheadBottom = baseY + subFs * 1.15 + subFs * 0.55;
+}
+
+function paintRibbon(ctx, state, L) {
+  const r = { ...L.ribbon };
+  // Keep clear of the script subhead on short frames.
+  if (L.subheadBottom) r.y = Math.max(r.y, L.subheadBottom + Math.round(L.H * 0.008));
+  const grad = ctx.createLinearGradient(r.x, 0, r.x + r.w, 0);
+  grad.addColorStop(0, '#f7c948');
+  grad.addColorStop(1, '#ff7a1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(r.x, r.y, r.w, r.h);
+  let fs = Math.round(r.h * 0.44);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#1a1206';
+  const fit = () => {
+    ctx.font = `${fs}px "Archivo Black", sans-serif`;
+    try { ctx.letterSpacing = `${Math.max(1, Math.round(fs * 0.22))}px`; } catch (e) { /* ignore */ }
+    return ctx.measureText(state.ribbon || '').width;
+  };
+  while (fit() > r.w - 20 && fs > 10) fs -= 1;
+  fit();
+  ctx.fillText(state.ribbon || '', r.x + r.w / 2, r.y + r.h / 2 + 1);
+  try { ctx.letterSpacing = '0px'; } catch (e) { /* ignore */ }
+}
+
+function paintSeal(ctx, L) {
+  const { x, y, r } = L.seal;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.21);
+  const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+  grad.addColorStop(0, '#ffe27a');
+  grad.addColorStop(0.6, '#f2c14e');
+  grad.addColorStop(1, '#c98f1b');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = Math.max(2, r * 0.06);
+  ctx.strokeStyle = '#a87a12';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+  ctx.lineWidth = Math.max(1, r * 0.03);
+  ctx.strokeStyle = 'rgba(120, 84, 8, 0.7)';
+  ctx.stroke();
+  ctx.fillStyle = '#241703';
+  drawStar(ctx, 0, -r * 0.52, r * 0.14, r * 0.06);
+  const fs = Math.round(r * 0.3);
+  ctx.font = `${fs}px "Archivo Black", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('BEST', 0, -r * 0.08);
+  ctx.fillText('SELLER', 0, r * 0.28);
   ctx.restore();
 }
 
-// Draw the whole Golden Mile cover onto ctx at W x H.
-// `images` maps a panel src to a loaded HTMLImageElement.
-export function drawGoldenMileCover(ctx, state, images, W, H) {
-  const grade = GOLDEN_MILE_GRADES[state.grade] || GOLDEN_MILE_GRADES.golden;
-  const layout = goldenMileLayout(state.size);
+function paintFooter(ctx, L) {
+  const midY = L.H - L.pad - L.footH / 2;
+  const fs = Math.max(12, Math.round(L.W * 0.02));
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.font = `${fs}px "Archivo Black", sans-serif`;
+  try { ctx.letterSpacing = `${Math.round(fs * 0.22)}px`; } catch (e) { /* ignore */ }
+  ctx.fillStyle = '#f2c14e';
+  ctx.fillText('— COMING SOON —', L.pad + 8, midY);
+
+  const small = Math.max(9, Math.round(L.W * 0.0095));
+  ctx.font = `${small}px "Archivo Black", sans-serif`;
+  try { ctx.letterSpacing = `${Math.round(small * 0.14)}px`; } catch (e) { /* ignore */ }
+  ctx.fillStyle = '#cbb9a8';
+  ctx.textAlign = 'center';
+  ctx.fillText('GOLDEN MILE PICTURES · A VICE CITY STORY', L.W / 2, midY);
+  try { ctx.letterSpacing = '0px'; } catch (e) { /* ignore */ }
+
+  // Barcode: black bars on a white strip.
+  const bw = Math.round(L.W * 0.1);
+  const bh = Math.round(L.footH * 0.62);
+  const bx = L.W - L.pad - 8 - bw;
+  const by = midY - bh / 2;
+  ctx.fillStyle = '#f5f0e6';
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.fillStyle = '#111111';
+  const bars = barcodeBars(20261121, 34);
+  let px = bx + 3;
+  for (let i = 0; i < bars.length && px < bx + bw - 3; i += 2) {
+    const wBar = bars[i] * (L.W / 1080);
+    ctx.fillRect(px, by + 2, wBar, bh - 4);
+    px += wBar + bars[i + 1] * (L.W / 1080);
+  }
+  ctx.textAlign = 'left';
+}
+
+function paintSelectedBanner(ctx, state, L) {
+  const rect = L.panels[state.selected];
+  if (!rect) return;
+  const h = Math.max(18, Math.round(L.W * 0.024));
+  ctx.fillStyle = '#ff2e88';
+  ctx.fillRect(rect.x, rect.y, rect.w, h);
+  const fs = Math.max(10, Math.round(h * 0.5));
+  ctx.font = `${fs}px "Archivo Black", sans-serif`;
+  ctx.fillStyle = '#2b0313';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SELECTED — drag to move · wheel to zoom', rect.x + rect.w / 2, rect.y + h / 2 + 1);
+}
+
+/**
+ * Paint the whole cover onto `canvas` from `state`.
+ * state: { panels: {id: {src, fx, fy, zoom, ox, oy}}, images: {id: HTMLImageElement},
+ *          title, subhead, ribbon, grade, selected }
+ * options: { banner: boolean } — draw the pink SELECTED strip (editor preview only).
+ */
+export function paintCover(canvas, state, options = {}) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  const L = layoutFor(W, H);
+  const grade = GRADES[state.grade] || GRADES['golden-hour'];
+
+  ctx.save();
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#160a12';
+  ctx.fillStyle = '#150e0c';
   ctx.fillRect(0, 0, W, H);
 
-  // Photo grid.
-  for (const panel of state.panels) {
-    const img = images[panel.src];
-    if (!img) continue;
-    drawGoldenMilePhoto(ctx, img, goldenMileCellRect(layout, W, H, panel.role), panel, grade, state.size);
+  // Photos.
+  if (grade.desaturate) ctx.filter = 'grayscale(0.8) brightness(0.88) contrast(1.08)';
+  for (const def of PANEL_DEFS) {
+    const rect = L.panels[def.id];
+    const frame = state.panels[def.id] || {};
+    const img = state.images ? state.images[def.id] : null;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rect.x, rect.y, rect.w, rect.h);
+    ctx.clip();
+    if (img) {
+      coverFitPhoto(ctx, img, rect, { fx: frame.fx ?? def.fx, fy: frame.fy ?? def.fy, zoom: frame.zoom ?? 1, ox: frame.ox ?? 0, oy: frame.oy ?? 0 });
+    } else {
+      ctx.fillStyle = '#241a16';
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    }
+    ctx.restore();
+  }
+  ctx.filter = 'none';
+
+  // Colour grade: a warm tint washed over the collage only.
+  ctx.save();
+  ctx.globalCompositeOperation = grade.blend;
+  ctx.globalAlpha = grade.tintAlpha;
+  ctx.fillStyle = grade.tint;
+  ctx.fillRect(L.cx, L.cy, L.cw, L.ch);
+  ctx.restore();
+  const vig = ctx.createRadialGradient(W / 2, L.cy + L.ch / 2, Math.min(L.cw, L.ch) * 0.35, W / 2, L.cy + L.ch / 2, Math.max(L.cw, L.ch) * 0.75);
+  vig.addColorStop(0, 'rgba(20, 8, 4, 0)');
+  vig.addColorStop(1, 'rgba(20, 8, 4, 0.32)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(L.cx, L.cy, L.cw, L.ch);
+
+  // Thin gold/dark borders around every panel.
+  ctx.strokeStyle = 'rgba(190, 150, 70, 0.55)';
+  ctx.lineWidth = Math.max(1, Math.round(W * 0.0018));
+  for (const def of PANEL_DEFS) {
+    const r = L.panels[def.id];
+    ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
   }
 
-  // Masthead strip.
-  const mh = layout.masthead.h * H;
-  ctx.fillStyle = '#12060d';
-  ctx.fillRect(0, 0, W, mh);
-  ctx.fillStyle = '#ffd23e';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  const mfs = mh * 0.42;
-  ctx.font = `${mfs}px ${LABEL_FONT}`;
-  ctx.fillText('★★★★★', W * 0.018, mh * 0.52);
-  ctx.fillStyle = '#f5f0e6';
-  ctx.font = `${mfs * 0.92}px ${LABEL_FONT}`;
-  ctx.fillText(GOLDEN_MILE_TAGLINE, W * 0.115, mh * 0.52);
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#ff7ab8';
-  ctx.fillText(GOLDEN_MILE_GAZETTE, W * 0.62, mh * 0.52);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#14100c';
-  const volW = W * 0.075;
-  ctx.fillStyle = '#ffd23e';
-  ctx.fillRect(W * 0.915, mh * 0.18, volW, mh * 0.64);
-  ctx.fillStyle = '#14100c';
-  ctx.font = `${mfs * 0.85}px ${LABEL_FONT}`;
-  ctx.fillText('VOL. 1', W * 0.915 + volW / 2, mh * 0.52);
-  ctx.textAlign = 'left';
-  ctx.strokeStyle = 'rgba(255, 210, 90, 0.6)';
-  ctx.lineWidth = Math.max(1, H * 0.0015);
-  ctx.beginPath();
-  ctx.moveTo(0, mh);
-  ctx.lineTo(W, mh);
-  ctx.stroke();
+  for (const def of PANEL_DEFS) paintPanelLabel(ctx, def, L.panels[def.id], L);
 
-  // Title band: its own zone across the middle, so the lettering never
-  // covers a car, a bike, a person or a face.
-  const bandY = layout.titleBand.y * H;
-  const bandH = layout.titleBand.h * H;
-  const grad = ctx.createLinearGradient(W * 0.1, 0, W * 0.9, 0);
-  grad.addColorStop(0, grade.title[0]);
-  grad.addColorStop(0.55, '#ff7a18');
-  grad.addColorStop(1, grade.title[1]);
-  ctx.textAlign = 'center';
-  const titleSize = Math.min(W * 0.115, bandH * 0.52);
-  ctx.font = `${titleSize}px ${TITLE_FONT}`;
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-  ctx.shadowBlur = titleSize * 0.12;
-  ctx.shadowOffsetY = titleSize * 0.05;
-  ctx.fillStyle = grad;
-  ctx.fillText(state.title, W / 2, bandY + titleSize * 0.62);
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-  // Pink script subhead, Palmline/Golden Mile style: delicate flowing
-  // cursive, small accent, strongly slanted (~25-30 deg lean), soft
-  // light-pink with a subtle glow only — NO white outline. r15f: sits
-  // in its own space BELOW the title (never overlapping a title
-  // letter), and is slightly thicker than r15e via a very thin
-  // SAME-COLOUR pink stroke, so it reads at a glance and stays elegant.
-  const scriptSize = bandH * 0.27;
-  const scriptY = bandY + titleSize * 1.12 + scriptSize * 0.75;
-  ctx.save();
-  ctx.translate(W / 2, scriptY);
-  ctx.transform(1, 0, -0.47, 1, 0, 0);
-  ctx.font = `${scriptSize}px ${SCRIPT_FONT}`;
-  ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(255, 143, 192, 0.55)';
-  ctx.shadowBlur = scriptSize * 0.18;
-  ctx.shadowOffsetY = scriptSize * 0.02;
-  ctx.lineWidth = scriptSize * 0.05;
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#ffa8cc';
-  ctx.fillStyle = '#ffa8cc';
-  ctx.strokeText(state.script, 0, 0);
-  ctx.fillText(state.script, 0, 0);
+  paintMasthead(ctx, L);
+  paintTitleBlock(ctx, state, grade, L);
+  paintRibbon(ctx, state, L);
+  paintSeal(ctx, L);
+  paintFooter(ctx, L);
+
+  if (options.banner) paintSelectedBanner(ctx, state, L);
   ctx.restore();
-  // Ribbon line.
-  ctx.font = `${bandH * 0.115}px ${LABEL_FONT}`;
-  const ribbonText = state.ribbon;
-  const rw = ctx.measureText(ribbonText).width + bandH * 0.3;
-  const rx = (W - rw) / 2;
-  const ry = scriptY + scriptSize * 0.8;
-  const rg = ctx.createLinearGradient(rx, 0, rx + rw, 0);
-  rg.addColorStop(0, '#ffd23e');
-  rg.addColorStop(1, '#ff7a18');
-  ctx.fillStyle = rg;
-  ctx.fillRect(rx, ry, rw, bandH * 0.17);
-  ctx.fillStyle = '#2a0a12';
-  ctx.fillText(ribbonText, W / 2, ry + bandH * 0.085);
-
-  // Bottom strip: COMING SOON, credits, barcode.
-  const footY = layout.foot.y * H;
-  const footH = layout.foot.h * H;
-  ctx.fillStyle = '#12060d';
-  ctx.fillRect(0, footY, W, footH);
-  ctx.fillStyle = '#ffd23e';
-  ctx.font = `${footH * 0.42}px ${LABEL_FONT}`;
-  ctx.fillText('—  COMING SOON  —', W * 0.018, footY + footH * 0.52);
-  ctx.fillStyle = 'rgba(245, 240, 230, 0.75)';
-  ctx.font = `${Math.max(9, footH * 0.16)}px ${LABEL_FONT}`;
-  ctx.textAlign = 'center';
-  ctx.fillText(GOLDEN_MILE_CREDITS, W * 0.5, footY + footH * 0.52);
-  ctx.textAlign = 'left';
-  drawGoldenMileBarcode(ctx, W * 0.86, footY + footH * 0.14, W * 0.115, footH * 0.72);
-
-  // Gold BEST seal, overlapping the bottom-right of the grid.
-  drawGoldenMileSeal(
-    ctx,
-    layout.seal.x * W,
-    layout.seal.y * H,
-    layout.seal.r * W,
-  );
-}
-
-// Render the cover to a PNG blob at one of the three post sizes.
-export async function exportGoldenMilePng(state, images, sizeId) {
-  const size = GOLDEN_MILE_SIZES[sizeId] || GOLDEN_MILE_SIZES.square;
-  const canvas = document.createElement('canvas');
-  canvas.width = size.width;
-  canvas.height = size.height;
-  const ctx = canvas.getContext('2d');
-  const renderState = { ...state, size: sizeId };
-  drawGoldenMileCover(ctx, renderState, images, size.width, size.height);
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  return L;
 }

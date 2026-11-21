@@ -1,411 +1,305 @@
-// GOLDEN MILE editor: builds the live magazine cover from state, wires
-// the studio controls, and exports real PNGs. Photos come from the
-// bundled samples or from the user's own files, read locally with
-// FileReader and never uploaded anywhere.
+// VICE PURSUIT — editor logic.
+// Owns the studio state (photos per panel, the three texts, the grade, the
+// post size, the selected panel), wires the three columns of the editor,
+// and paints the live cover preview through cover.js.
 
-import {
-  COVER_TITLE,
-  COVER_SUBHEAD,
-  COVER_RIBBON,
-  COVER_TAGLINE,
-  COVER_GAZETTE,
-  COVER_CREDITS,
-  COVER_GRADES,
-  COVER_GRADE_IDS,
-  COVER_SIZES,
-  coverDefaultState,
-  coverPanelCrop,
-  paintCover,
-  exportCoverPng,
-} from './cover.js';
-import {
-  COVER_SAMPLES,
-  COVER_GRADE_SWATCH,
-  readCoverQuery,
-  applyCoverQuery,
-} from './shots.js';
+import { PANEL_DEFS, SAMPLES, GRADES, SIZES, loadImage, paintCover, layoutFor } from './cover.js';
+import { shotViewFromQuery, applyShotView } from './shots.js';
 
-const query = readCoverQuery(window.location.search);
-const state = applyCoverQuery(coverDefaultState(), query);
-let selected = 2; // the hero panel, centre of the cover
-const images = {}; // src -> loaded HTMLImageElement
-const userPhotos = [];
+const canvas = document.getElementById('coverCanvas');
+const sampleGrid = document.getElementById('sampleGrid');
+const gradeList = document.getElementById('gradeList');
+const sizeList = document.getElementById('sizeList');
+const panelPick = document.getElementById('panelPick');
+const zoomSlider = document.getElementById('zoomSlider');
 
-const $ = (id) => document.getElementById(id);
-const coverMount = $('coverMount');
-const shotWrap = $('shotWrap');
+const state = {
+  panels: {},
+  images: {},
+  title: 'VICE PURSUIT',
+  subhead: 'Coastline Nights',
+  ribbon: 'ONE COASTLINE · FIVE STORIES · NO CURFEW',
+  grade: 'golden-hour',
+  sizeKey: 'square',
+  selected: 'hero',
+  selectedSample: 'vice-driver',
+};
 
-function loadImage(src) {
-  if (images[src]) return Promise.resolve(images[src]);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      images[src] = img;
-      resolve(img);
-    };
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
+for (const def of PANEL_DEFS) {
+  state.panels[def.id] = { src: def.src, fx: def.fx, fy: def.fy, zoom: 1, ox: 0, oy: 0 };
 }
 
-function loadAllPanelImages() {
-  return Promise.all(state.panels.map((p) => loadImage(p.src)));
+const coverView = shotViewFromQuery(location.search);
+if (coverView) applyShotView(state, coverView);
+
+function repaint() {
+  paintCover(canvas, state, { banner: !coverView || coverView.mode !== 'cover' });
 }
 
-function hintText() {
-  const p = state.panels[selected];
-  return `Selected: ${p.role} — ${p.src.split('/').pop()}. Drag the photo to move it, scroll to zoom.`;
+function resizePreviewToSize() {
+  const size = SIZES[state.sizeKey];
+  canvas.width = size.w;
+  canvas.height = size.h;
 }
 
-// Build the DOM cover for the current state. The structure mirrors the
-// canvas renderer in cover.js: masthead, five-column grid, title band
-// in its own zone, bottom strip, gold seal.
-function buildCoverEl() {
-  const cover = document.createElement('div');
-  cover.className = 'gm-cover';
-  cover.dataset.grade = state.grade;
-  cover.dataset.size = state.size;
+function selectPanel(id) {
+  if (!state.panels[id]) return;
+  state.selected = id;
+  const frame = state.panels[id];
+  zoomSlider.value = String(Math.round((frame.zoom || 1) * 100));
+  for (const chip of panelPick.querySelectorAll('.panel-chip')) {
+    chip.classList.toggle('selected', chip.dataset.panel === id);
+  }
+  repaint();
+}
 
-  const mast = document.createElement('header');
-  mast.className = 'gm-masthead';
-  mast.innerHTML =
-    '<span class="stars">★★★★★</span>' +
-    `<span class="tag">${COVER_TAGLINE}</span>` +
-    `<span class="gazette">${COVER_GAZETTE}</span>` +
-    '<span class="vol">VOL. 1</span>';
-  cover.appendChild(mast);
+function frameFor(id) {
+  return state.panels[id];
+}
 
-  const grid = document.createElement('div');
-  grid.className = 'gm-grid';
-  state.panels.forEach((panel, i) => {
-    const cell = document.createElement('div');
-    cell.className =
-      'gm-panel' +
-      (panel.role === 'HERO' ? ' hero' : '') +
-      (panel.role === 'THE BOSS' ? ' boss' : '');
-    if (i === selected) cell.classList.add('selected');
-    cell.dataset.index = String(i);
-    const img = document.createElement('img');
-    img.src = panel.src;
-    img.alt = panel.role;
-    img.draggable = false;
-    // Same per-size crop the PNG renderer uses, so the preview and the
-    // export always agree (portrait DRIVER is pulled back a touch).
-    const crop = coverPanelCrop(panel, state.size);
-    img.style.objectPosition = `${crop.fx * 100}% ${crop.fy * 100}%`;
-    if (panel.flip) img.style.transform = 'scaleX(-1)';
-    if (crop.zoom && crop.zoom !== 1) {
-      img.style.width = `${crop.zoom * 100}%`;
-      img.style.height = `${crop.zoom * 100}%`;
-      img.style.maxWidth = 'none';
-      img.style.maxHeight = 'none';
-      img.style.left = `${(1 - crop.zoom) * 50}%`;
-      img.style.top = `${(1 - crop.zoom) * 50}%`;
+async function fillSelectedPanel(src, sampleName) {
+  const frame = frameFor(state.selected);
+  const def = PANEL_DEFS.find((d) => d.id === state.selected);
+  const img = await loadImage(src);
+  if (!img) return;
+  frame.src = src;
+  frame.fx = def.fx;
+  frame.fy = def.fy;
+  frame.zoom = 1;
+  frame.ox = 0;
+  frame.oy = 0;
+  state.images[state.selected] = img;
+  if (sampleName) {
+    state.selectedSample = sampleName;
+    for (const thumb of sampleGrid.querySelectorAll('.sample-thumb')) {
+      thumb.classList.toggle('selected', thumb.dataset.sample === sampleName);
     }
-    cell.appendChild(img);
-    const wash = document.createElement('div');
-    wash.className = 'wash';
-    cell.appendChild(wash);
-    if (panel.role !== 'HERO') {
-      const role = document.createElement('span');
-      role.className = 'role';
-      role.textContent = panel.role;
-      cell.appendChild(role);
-    }
-    cell.addEventListener('pointerdown', (ev) => startDrag(ev, i, cell));
-    grid.appendChild(cell);
-  });
-  cover.appendChild(grid);
-
-  const band = document.createElement('div');
-  band.className = 'gm-titleband';
-  const title = document.createElement('h1');
-  title.className = 'gm-title';
-  title.textContent = state.title;
-  band.appendChild(title);
-  const script = document.createElement('p');
-  script.className = 'gm-script';
-  script.textContent = state.script;
-  band.appendChild(script);
-  const ribbon = document.createElement('p');
-  ribbon.className = 'gm-ribbon';
-  ribbon.textContent = state.ribbon;
-  band.appendChild(ribbon);
-  cover.appendChild(band);
-
-  const foot = document.createElement('footer');
-  foot.className = 'gm-foot';
-  foot.innerHTML =
-    '<span class="soon">—&nbsp; COMING SOON &nbsp;—</span>' +
-    `<span class="credits">${COVER_CREDITS}</span>` +
-    '<span class="gm-barcode" aria-hidden="true"></span>';
-  cover.appendChild(foot);
-
-  const seal = document.createElement('div');
-  seal.className = 'gm-seal';
-  seal.innerHTML = '★ BEST ★<br>SELLER';
-  cover.appendChild(seal);
-
-  return cover;
-}
-
-function render() {
-  coverMount.replaceChildren(buildCoverEl());
-  if (document.body.classList.contains('shot-cover')) {
-    shotWrap.replaceChildren(buildCoverEl());
   }
-  const hint = $('panelHint');
-  if (hint) hint.textContent = hintText();
-  document.querySelectorAll('#gradeList .gm-chip').forEach((chip) => {
-    chip.classList.toggle('on', chip.dataset.grade === state.grade);
-  });
-  document.querySelectorAll('#sizeList .gm-chip').forEach((chip) => {
-    chip.classList.toggle('on', chip.dataset.size === state.size);
-  });
+  zoomSlider.value = '100';
+  repaint();
 }
 
-// ---- Panel interaction: drag to pan, wheel to zoom ----------------------
+// ---- left column: sample grid + photo intake ----
 
-function startDrag(ev, index, cell) {
-  ev.preventDefault();
-  selected = index;
-  document.querySelectorAll('.gm-panel').forEach((el, i) => {
-    el.classList.toggle('selected', i === index);
-  });
-  const hint = $('panelHint');
-  if (hint) hint.textContent = hintText();
-  const panel = state.panels[index];
-  const img = cell.querySelector('img');
-  const startX = ev.clientX;
-  const startY = ev.clientY;
-  const startFx = panel.fx;
-  const startFy = panel.fy;
-  const rect = cell.getBoundingClientRect();
-  function move(e2) {
-    panel.fx = Math.min(1, Math.max(0, startFx - (e2.clientX - startX) / rect.width));
-    panel.fy = Math.min(1, Math.max(0, startFy - (e2.clientY - startY) / rect.height));
-    img.style.objectPosition = `${panel.fx * 100}% ${panel.fy * 100}%`;
-  }
-  function up() {
-    window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
-    render();
-  }
-  window.addEventListener('pointermove', move);
-  window.addEventListener('pointerup', up);
+for (const name of SAMPLES) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'sample-thumb' + (name === state.selectedSample ? ' selected' : '');
+  button.dataset.sample = name;
+  const thumb = document.createElement('img');
+  thumb.src = `samples/${name}.jpg`;
+  thumb.alt = name;
+  thumb.loading = 'lazy';
+  const tag = document.createElement('span');
+  tag.textContent = name;
+  button.append(thumb, tag);
+  button.addEventListener('click', () => fillSelectedPanel(`samples/${name}.jpg`, name));
+  sampleGrid.append(button);
 }
 
-function attachWheel() {
-  coverMount.addEventListener(
-    'wheel',
-    (ev) => {
-      const cell = ev.target.closest('.gm-panel');
-      if (!cell) return;
-      ev.preventDefault();
-      const panel = state.panels[Number(cell.dataset.index)];
-      panel.zoom = Math.min(2.5, Math.max(1, (panel.zoom || 1) * (ev.deltaY < 0 ? 1.12 : 0.9)));
-      render();
-    },
-    { passive: false },
-  );
-}
+const dropzone = document.getElementById('dropzone');
+const photoPicker = document.getElementById('photoPicker');
+document.getElementById('addPhotosButton').addEventListener('click', () => photoPicker.click());
 
-// ---- Controls -----------------------------------------------------------
-
-function buildControls() {
-  const gradeList = $('gradeList');
-  for (const id of COVER_GRADE_IDS) {
-    const grade = COVER_GRADES[id];
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'gm-chip';
-    chip.dataset.grade = id;
-    chip.innerHTML =
-      `<span class="dot" style="background:${COVER_GRADE_SWATCH[id]}"></span>` +
-      `<span style="flex:1">${grade.label}</span><small>grade</small>`;
-    chip.addEventListener('click', () => {
-      state.grade = id;
-      render();
-    });
-    gradeList.appendChild(chip);
-  }
-  const sizeList = $('sizeList');
-  for (const [id, size] of Object.entries(COVER_SIZES)) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'gm-chip';
-    chip.dataset.size = id;
-    chip.innerHTML = `<span style="flex:1">${size.label}</span><small>export</small>`;
-    chip.addEventListener('click', () => {
-      state.size = id;
-      render();
-    });
-    sizeList.appendChild(chip);
-  }
-}
-
-function buildSamples() {
-  const strip = $('sampleStrip');
-  for (const file of COVER_SAMPLES) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'gm-sample';
-    btn.title = file;
-    const img = document.createElement('img');
-    img.src = 'samples/' + file;
-    img.alt = file;
-    img.loading = 'lazy';
-    btn.appendChild(img);
-    const tag = document.createElement('span');
-    tag.textContent = file.replace('.jpg', '');
-    btn.appendChild(tag);
-    btn.addEventListener('click', async () => {
-      const panel = state.panels[selected];
-      panel.src = 'samples/' + file;
-      await loadImage(panel.src);
-      render();
-      refreshSampleMarks();
-    });
-    strip.appendChild(btn);
-  }
-  refreshSampleMarks();
-}
-
-function refreshSampleMarks() {
-  const used = new Set(state.panels.map((p) => p.src.split('/').pop()));
-  document.querySelectorAll('#sampleStrip .gm-sample').forEach((btn) => {
-    btn.classList.toggle('used', used.has(btn.title));
-  });
-}
-
-function addUserPhoto(file) {
+function takeFiles(files) {
+  const file = files && files[0];
+  if (!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
-  reader.onload = async () => {
-    const src = String(reader.result);
-    userPhotos.push(src);
-    const panel = state.panels[selected];
-    panel.src = src;
-    panel.fx = 0.5;
-    panel.fy = 0.4;
-    panel.zoom = 1;
-    images[src] = await loadImage(src);
-    render();
-  };
+  reader.onload = () => fillSelectedPanel(String(reader.result), null);
   reader.readAsDataURL(file);
 }
+photoPicker.addEventListener('change', () => takeFiles(photoPicker.files));
+dropzone.addEventListener('dragover', (event) => { event.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  dropzone.classList.remove('drag-over');
+  takeFiles(event.dataTransfer.files);
+});
+document.addEventListener('paste', (event) => takeFiles(event.clipboardData && event.clipboardData.files));
 
-function wireControls() {
-  $('titleInput').addEventListener('input', (e) => {
-    state.title = e.target.value.toUpperCase() || COVER_TITLE;
-    render();
-  });
-  $('scriptInput').addEventListener('input', (e) => {
-    state.script = e.target.value || COVER_SUBHEAD;
-    render();
-  });
-  $('ribbonInput').addEventListener('input', (e) => {
-    state.ribbon = e.target.value.toUpperCase() || COVER_RIBBON;
-    render();
-  });
-  $('flipBtn').addEventListener('click', () => {
-    const p = state.panels[selected];
-    p.flip = !p.flip;
-    render();
-  });
-  $('faceBtn').addEventListener('click', () => {
-    const p = state.panels[selected];
-    p.fx = 0.5;
-    p.fy = 0.35;
-    p.zoom = 1;
-    render();
-  });
-  $('swapBtn').addEventListener('click', () => {
-    const next = (selected + 1) % state.panels.length;
-    const a = state.panels[selected];
-    const b = state.panels[next];
-    [a.src, b.src] = [b.src, a.src];
-    [a.fx, b.fx] = [b.fx, a.fx];
-    [a.fy, b.fy] = [b.fy, a.fy];
-    selected = next;
-    render();
-    refreshSampleMarks();
-  });
-  $('resetBtn').addEventListener('click', () => {
-    const fresh = coverDefaultState().panels[selected];
-    state.panels[selected] = { ...fresh };
-    render();
-    refreshSampleMarks();
-  });
-  $('addPhotosBtn').addEventListener('click', () => $('fileInput').click());
-  $('fileInput').addEventListener('change', (e) => {
-    for (const f of e.target.files) addUserPhoto(f);
-    e.target.value = '';
-  });
-  const drop = $('dropZone');
-  drop.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    drop.classList.add('over');
-  });
-  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-  drop.addEventListener('drop', (e) => {
-    e.preventDefault();
-    drop.classList.remove('over');
-    for (const f of e.dataTransfer.files) addUserPhoto(f);
-  });
-  window.addEventListener('paste', (e) => {
-    for (const item of e.clipboardData?.items || []) {
-      if (item.type.startsWith('image/')) addUserPhoto(item.getAsFile());
-    }
-  });
-  const exporters = [
-    ['exportSquareBtn', 'square'],
-    ['exportPortraitBtn', 'portrait'],
-    ['exportWideBtn', 'landscape'],
-  ];
-  for (const [id, sizeId] of exporters) {
-    $(id).addEventListener('click', async () => {
-      const btn = $(id);
-      btn.disabled = true;
-      btn.textContent = 'Rendering…';
-      try {
-        await loadAllPanelImages();
-        const blob = await exportCoverPng(state, images, sizeId);
-        const size = COVER_SIZES[sizeId];
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `vice-pursuit-${size.width}x${size.height}.png`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = `⬇ PNG ${COVER_SIZES[sizeId].width} × ${COVER_SIZES[sizeId].height}`;
-      }
-    });
+// ---- left column: panel picker + zoom ----
+
+for (const def of PANEL_DEFS) {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'panel-chip' + (def.id === state.selected ? ' selected' : '');
+  chip.dataset.panel = def.id;
+  chip.textContent = def.label || 'HERO';
+  chip.addEventListener('click', () => selectPanel(def.id));
+  panelPick.append(chip);
+}
+zoomSlider.addEventListener('input', () => {
+  frameFor(state.selected).zoom = Number(zoomSlider.value) / 100;
+  repaint();
+});
+document.getElementById('resetPanelButton').addEventListener('click', () => {
+  const def = PANEL_DEFS.find((d) => d.id === state.selected);
+  const frame = frameFor(state.selected);
+  frame.fx = def.fx;
+  frame.fy = def.fy;
+  frame.zoom = 1;
+  frame.ox = 0;
+  frame.oy = 0;
+  zoomSlider.value = '100';
+  repaint();
+});
+
+// ---- centre: drag to move, wheel to zoom, click to select ----
+
+let dragging = null;
+function canvasPoint(event) {
+  const box = canvas.getBoundingClientRect();
+  return {
+    x: ((event.clientX - box.left) / box.width) * canvas.width,
+    y: ((event.clientY - box.top) / box.height) * canvas.height,
+  };
+}
+function panelAt(point) {
+  const L = layoutFor(canvas.width, canvas.height);
+  for (const def of PANEL_DEFS) {
+    const r = L.panels[def.id];
+    if (point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h) return def.id;
   }
+  return null;
+}
+canvas.addEventListener('pointerdown', (event) => {
+  const id = panelAt(canvasPoint(event));
+  if (!id) return;
+  selectPanel(id);
+  dragging = { id, x: event.clientX, y: event.clientY };
+  canvas.setPointerCapture(event.pointerId);
+});
+canvas.addEventListener('pointermove', (event) => {
+  if (!dragging) return;
+  const frame = frameFor(dragging.id);
+  const img = state.images[dragging.id];
+  if (!img) return;
+  const L = layoutFor(canvas.width, canvas.height);
+  const rect = L.panels[dragging.id];
+  const box = canvas.getBoundingClientRect();
+  const dx = ((event.clientX - dragging.x) / box.width) * canvas.width;
+  const dy = ((event.clientY - dragging.y) / box.height) * canvas.height;
+  const base = Math.max(rect.w / img.naturalWidth, rect.h / img.naturalHeight) * (frame.zoom || 1);
+  frame.ox = (frame.ox || 0) - dx / (base * img.naturalWidth);
+  frame.oy = (frame.oy || 0) - dy / (base * img.naturalHeight);
+  dragging.x = event.clientX;
+  dragging.y = event.clientY;
+  repaint();
+});
+canvas.addEventListener('pointerup', () => { dragging = null; });
+canvas.addEventListener('wheel', (event) => {
+  event.preventDefault();
+  const id = panelAt(canvasPoint(event)) || state.selected;
+  selectPanel(id);
+  const frame = frameFor(id);
+  const next = (frame.zoom || 1) * (event.deltaY < 0 ? 1.12 : 1 / 1.12);
+  frame.zoom = Math.max(1, Math.min(2.6, next));
+  zoomSlider.value = String(Math.round(frame.zoom * 100));
+  repaint();
+}, { passive: false });
+
+// ---- right column: caption inputs ----
+
+document.getElementById('titleInput').addEventListener('input', (event) => { state.title = event.target.value; repaint(); });
+document.getElementById('subheadInput').addEventListener('input', (event) => { state.subhead = event.target.value; repaint(); });
+document.getElementById('ribbonInput').addEventListener('input', (event) => { state.ribbon = event.target.value; repaint(); });
+
+// ---- right column: grades + sizes ----
+
+for (const [key, grade] of Object.entries(GRADES)) {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'grade-row' + (key === state.grade ? ' selected' : '');
+  row.dataset.grade = key;
+  const dot = document.createElement('span');
+  dot.className = 'grade-dot';
+  dot.style.background = grade.dot;
+  const name = document.createElement('span');
+  name.textContent = grade.name;
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.textContent = 'grade';
+  row.append(dot, name, tag);
+  row.addEventListener('click', () => {
+    state.grade = key;
+    for (const other of gradeList.querySelectorAll('.grade-row')) {
+      other.classList.toggle('selected', other.dataset.grade === key);
+    }
+    repaint();
+  });
+  gradeList.append(row);
 }
 
-// ---- Boot ---------------------------------------------------------------
+for (const [key, size] of Object.entries(SIZES)) {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'size-row' + (key === state.sizeKey ? ' selected' : '');
+  row.dataset.size = key;
+  const name = document.createElement('span');
+  name.textContent = size.label;
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.textContent = 'export';
+  row.append(name, tag);
+  row.addEventListener('click', () => {
+    state.sizeKey = key;
+    for (const other of sizeList.querySelectorAll('.size-row')) {
+      other.classList.toggle('selected', other.dataset.size === key);
+    }
+    resizePreviewToSize();
+    repaint();
+  });
+  sizeList.append(row);
+}
+
+// ---- export ----
+
+function exportCover(sizeKey) {
+  const size = SIZES[sizeKey];
+  const off = document.createElement('canvas');
+  off.width = size.w;
+  off.height = size.h;
+  paintCover(off, state, { banner: false });
+  off.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vice-pursuit-${sizeKey}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }, 'image/png');
+}
+for (const button of document.querySelectorAll('[data-export]')) {
+  button.addEventListener('click', () => exportCover(button.dataset.export));
+}
+
+// ---- boot: fonts + photos, then paint and signal readiness ----
 
 async function boot() {
-  if (query.shot === 'cover') {
-    document.body.classList.add('shot-cover');
-    document.title = 'VICE PURSUIT — cover';
+  if (coverView && coverView.mode === 'cover') {
+    document.body.classList.add('cover-mode');
+    canvas.width = coverView.width;
+    canvas.height = coverView.height;
+  } else {
+    resizePreviewToSize();
   }
-  buildControls();
-  buildSamples();
-  wireControls();
-  attachWheel();
-  await loadAllPanelImages();
-  await document.fonts.ready;
-  render();
-  // Keep the canvas renderer honest: it must be able to draw the same
-  // cover the DOM shows, so warm its image cache too.
-  if (query.shot === 'cover') {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    paintCover(canvas.getContext('2d'), state, images, 32, 32);
+  try {
+    await Promise.all([
+      document.fonts.load('100px Anton'),
+      document.fonts.load('16px "Archivo Black"'),
+      document.fonts.load('16px "Bebas Neue"'),
+      document.fonts.load('60px "Great Vibes"'),
+      document.fonts.ready,
+    ]);
+  } catch (err) {
+    window.__paintError = String(err);
   }
+  const loaded = await Promise.all(PANEL_DEFS.map((def) => loadImage(def.src)));
+  PANEL_DEFS.forEach((def, i) => { state.images[def.id] = loaded[i]; });
+  repaint();
+  window.__shotReady = true;
 }
 
 boot();

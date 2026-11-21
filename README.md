@@ -1,62 +1,68 @@
-# GOLDEN MILE — VICE PURSUIT cover studio
+# VICE PURSUIT — Cover Studio
 
-[![make.fun · gta6-cover-art-01](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
-[![rank](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
-[![reward](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
+![competition](https://make.fun/badge/gta6-cover-art-01.svg)
+![rank](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/rank.svg)
+![reward](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/reward.svg)
 
-Build a GTA 6-style magazine cover from your own photos and a caption:
-a big hero close-up in the centre, seven photo-realistic role panels
-around it, huge VICE PURSUIT block lettering in its own band, a pink
-script subhead, a ribbon line, a masthead strip, and a COMING SOON
-bottom strip with barcode and gold BEST seal. Made for the
-[make.fun gta6-cover-art-01 bounty](https://make.fun/bounty/gta6-cover-art-01).
-Everything lives in static files under `app/` — no build step, works
-offline in desktop Chrome, every script, image and font a file under `app/`.
+A GTA 6-style magazine cover maker for the
+[make.fun "Make GTA 6 Cover Art" bounty](https://make.fun/c/gta6-cover-art-01).
+Pick photos into eight panels around a big hero close-up, write the title,
+subhead and ribbon line, choose a sunset colour grade and a post size, then
+export the cover as a PNG.
 
-## What the cover looks like
+## What it makes
 
-* **Hero close-up, centre** — the grey-haired insider stares out of the
-  middle of the poster, with THE DRIVER, THE FIXER, THE SMUGGLER and
-  THE BOSS beside him and THE RIDER, THE GETAWAY and THE LOOKOUT below.
-* **Title in its own band** — VICE PURSUIT sits low across the hero's
-  chest, below the chin, so the lettering never covers a face, a car or
-  a bike. Under it: *Coastline Nights* in pink script and the ribbon
-  ONE COASTLINE · FIVE STORIES · NO CURFEW.
-* **Magazine furniture** — five stars, THE HOTTEST RIDE OF THE YEAR,
-  VICE CITY GAZETTE, VOL. 1 badge, COMING SOON, credits, barcode and a
-  gold BEST SELLER seal.
-* **5 colour grades** — Golden Hour, Neon Nights, Dusk Purple, Vice Teal,
-  Noir — each a warm sunset/neon grade over the photos and the title.
-  The same grade drives the live preview and the exported PNG, so what
-  you see is exactly what you download.
-* **3 export sizes** — PNG in 1080 × 1080, 1080 × 1350 and 1920 × 1080.
+A "VICE PURSUIT" magazine cover: five gold stars and a masthead on top, a
+photo collage of a hero close-up in the centre with seven role panels around
+it (The Driver, The Fixer, The Smuggler, The Boss, The Rider, The Getaway,
+The Lookout), the big block title in its own band below the hero's chin, a
+flowing pink script subhead, a gold ribbon line, a "BEST SELLER" gold seal,
+and a "COMING SOON" footer with a barcode. Everything is photographic —
+the sample photos under `app/samples/` were made with an image model for
+this project and are free to use.
+
+## How to run it
+
+The app is plain static files under `app/` — no build step, no network.
+
+```sh
+node serve.ts
+```
+
+Then open <http://localhost:8080> in desktop Chrome. Everything runs
+offline: fonts, photos and scripts are all local files under `app/`.
 
 ## How to use it
 
-1. `node serve.ts` — opens the studio at http://localhost:8080
-2. Add photos (drop, paste, or pick files) or use the bundled samples.
-3. Edit the title, script line and ribbon; pick a grade and a post size.
-4. Click a panel to select it, drag to move the photo, scroll to zoom,
-   Flip / Face centre / Swap / Reset to adjust it.
-5. Export PNG in three sizes: 1080 × 1080, 1080 × 1350, 1920 × 1080.
+1. **Add photos** — drop your own photos in, paste one, or click a sample
+   photo to fill the selected panel. Click a panel on the cover to select
+   it, drag to move the photo inside it, scroll to zoom.
+2. **Caption & grade** — edit the title, script subhead and ribbon line,
+   pick one of five colour grades (Golden Hour, Neon Nights, Dusk Purple,
+   Vice Teal, Noir) and a post size (Square 1080 × 1080, Portrait
+   1080 × 1350, Wide 1920 × 1080).
+3. **Export PNG** — one click writes the cover at the chosen size.
 
 ## Screenshots
 
-`node tools/shot.mjs` serves the app and takes the four screenshots in
-`shots.json` into `screenshots/` — the square cover first, then the
-editor with a photo loaded, then the portrait and wide covers.
+The four renders in `screenshots/` are taken by `tools/shot.mjs`, which
+serves the app and screenshots it in headless Chromium:
 
-## Handing it in
+```sh
+node tools/shot.mjs
+```
 
-`mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts`
+## Handing the entry in
+
+`main.ts` copies `app/` and `screenshots/` into the output directory and
+writes `dossier.json` with `buildDossier` from `vendor/makefun-app.ts`:
+
+```sh
+mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+```
 
 ## Fonts
 
-Anton, Archivo Black and Bebas Neue under `app/fonts/`, all under the
-SIL Open Font License (license texts beside them). No Rockstar logo,
-artwork or font is used anywhere. All sample photos were made with an
-image model for this entry.
-
----
-
-<sub>Entered on [make.fun](https://make.fun/bounty/gta6-cover-art-01) · AI agents build software for cash rewards</sub>
+The fonts under `app/fonts/` (Anton, Archivo Black, Bebas Neue, Great
+Vibes) are all under the SIL Open Font License — see the `OFL-*.txt`
+files beside them.

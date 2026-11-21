@@ -1,90 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="GOLDEN MILE — turn your photos into a GTA-style magazine cover: hero close-up, seven role panels, VICE PURSUIT lettering, 5 grades, PNG in 3 sizes. Works offline.">
-  <title>GOLDEN MILE — VICE PURSUIT cover studio</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VICE PURSUIT · Cover Studio</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="gm-topbar">
-    <div class="gm-logo"><b>GOLDEN</b> <em>MILE</em> <span>VICE PURSUIT · COVER STUDIO</span></div>
-    <nav class="gm-steps" aria-label="Steps">
-      <span class="on"><b>1</b> Add photos</span><span>→</span>
-      <span><b>2</b> Caption &amp; grade</span><span>→</span>
-      <span><b>3</b> Export PNG</span>
-    </nav>
-  </header>
+<header class="topbar" id="topbar">
+  <div class="wordmark"><span class="word-golden">GOLDEN</span> <span class="word-mile">MILE</span> <span class="word-rest">VICE PURSUIT · COVER STUDIO</span></div>
+  <div class="steps"><span><b>1</b> Add photos</span> <i>→</i> <span><b>2</b> Caption &amp; grade</span> <i>→</i> <span><b>3</b> Export PNG</span></div>
+</header>
 
-  <main class="gm-studio">
-    <!-- Left column: photos and the selected panel. -->
-    <section class="gm-col" aria-label="Photos">
-      <div class="gm-card">
-        <h2><span class="num">1</span> ADD PHOTOS</h2>
-        <div id="dropZone" class="gm-drop" tabindex="0">
-          Drop photos here, paste one, or pick files.
-          <div style="margin-top:10px">
-            <button id="addPhotosBtn" type="button" class="gm-btn gm-btn-pink">+ Add photos</button>
-          </div>
-          <input id="fileInput" type="file" accept="image/*" multiple hidden>
-        </div>
-        <p class="gm-hint">Photos stay on your machine — nothing is uploaded. Click a sample to load it into the selected panel.</p>
-        <label class="gm-label">SAMPLE PHOTOS — CLICK TO FILL THE SELECTED PANEL</label>
-        <div id="sampleStrip" class="gm-samples"></div>
+<main class="workspace" id="workspace">
+  <section class="column left" id="leftColumn">
+    <div class="panel-card">
+      <h2 class="section-title"><span class="step-dot">1</span> ADD PHOTOS</h2>
+      <div class="dropzone" id="dropzone" tabindex="0">
+        <p>Drop photos here, paste one, or pick files.</p>
+        <button class="pink-button" id="addPhotosButton" type="button">+ Add photos</button>
+        <input type="file" id="photoPicker" accept="image/*" multiple hidden>
       </div>
-      <div class="gm-card">
-        <h2><span class="num">2</span> PANEL</h2>
-        <p class="gm-hint" id="panelHint">Click any panel on the cover to select it, then drag the photo to move it and scroll to zoom.</p>
-        <div class="gm-row" style="margin-top:10px">
-          <button id="flipBtn" type="button" class="gm-btn gm-btn-ghost">⇄ Flip</button>
-          <button id="faceBtn" type="button" class="gm-btn gm-btn-ghost">◎ Face centre</button>
-        </div>
-        <div class="gm-row" style="margin-top:8px">
-          <button id="swapBtn" type="button" class="gm-btn gm-btn-ghost">⇅ Swap with next</button>
-          <button id="resetBtn" type="button" class="gm-btn gm-btn-ghost">↺ Reset panel</button>
-        </div>
-      </div>
-    </section>
+      <p class="hint">Photos stay on your machine — nothing is uploaded. Click a sample to load it into the selected panel.</p>
+      <h3 class="grid-title">SAMPLE PHOTOS — CLICK TO FILL THE SELECTED PANEL</h3>
+      <div class="sample-grid" id="sampleGrid"></div>
+    </div>
+    <div class="panel-card panel-controls">
+      <h2 class="section-title"><span class="step-dot">2</span> PANEL</h2>
+      <div class="panel-pick" id="panelPick"></div>
+      <label class="zoom-row">Zoom <input type="range" id="zoomSlider" min="100" max="260" value="100"></label>
+      <button class="ghost-button" id="resetPanelButton" type="button">Reset panel framing</button>
+    </div>
+  </section>
 
-    <!-- Middle column: the live cover and the export buttons. -->
-    <section class="gm-stage" aria-label="Cover preview">
-      <div id="coverMount"></div>
-      <p class="gm-stage-note">Live preview — <b>VICE PURSUIT</b> · hero close-up in the centre, seven role panels around it, title in its own band.</p>
-      <div class="gm-row" style="width:100%; max-width:640px">
-        <button id="exportSquareBtn" type="button" class="gm-btn gm-btn-gold">⬇ PNG 1080 × 1080</button>
-        <button id="exportPortraitBtn" type="button" class="gm-btn gm-btn-gold">⬇ PNG 1080 × 1350</button>
-        <button id="exportWideBtn" type="button" class="gm-btn gm-btn-gold">⬇ PNG 1920 × 1080</button>
-      </div>
-    </section>
+  <section class="column centre" id="centreColumn">
+    <div class="cover-stage" id="coverStage">
+      <canvas id="coverCanvas" width="1080" height="1080"></canvas>
+    </div>
+    <p class="caption-line">Live preview — <b>VICE PURSUIT</b> · hero close-up in the centre, seven role panels around it, title in its own band.</p>
+    <div class="export-row">
+      <button class="gold-button" type="button" data-export="square">↓ PNG 1080 × 1080</button>
+      <button class="gold-button" type="button" data-export="portrait">↓ PNG 1080 × 1350</button>
+      <button class="gold-button" type="button" data-export="wide">↓ PNG 1920 × 1080</button>
+    </div>
+  </section>
 
-    <!-- Right column: caption, colour grade, post size. -->
-    <section class="gm-col" aria-label="Caption and export">
-      <div class="gm-card">
-        <h2><span class="num">3</span> CAPTION</h2>
-        <label class="gm-label" for="titleInput">TITLE — BIG BLOCK LETTERS</label>
-        <input id="titleInput" class="gm-input" type="text" value="VICE PURSUIT" maxlength="24">
-        <label class="gm-label" for="scriptInput">SCRIPT SUBHEAD</label>
-        <input id="scriptInput" class="gm-input" type="text" value="Coastline Nights" maxlength="40">
-        <label class="gm-label" for="ribbonInput">RIBBON LINE</label>
-        <input id="ribbonInput" class="gm-input" type="text" value="ONE COASTLINE · FIVE STORIES · NO CURFEW" maxlength="60">
-        <p class="gm-hint">The title lives in its own band across the middle, so it never covers a car, a bike, a person or a face.</p>
-      </div>
-      <div class="gm-card">
-        <h2><span class="num">4</span> COLOUR GRADE</h2>
-        <div id="gradeList" class="gm-grades"></div>
-      </div>
-      <div class="gm-card">
-        <h2><span class="num">5</span> POST SIZE</h2>
-        <div id="sizeList" class="gm-sizes"></div>
-        <p class="gm-hint">One click exports the exact PNG size — square for the feed, portrait for stories, wide for banners.</p>
-      </div>
-    </section>
-  </main>
+  <section class="column right" id="rightColumn">
+    <div class="panel-card">
+      <h2 class="section-title"><span class="step-dot">3</span> CAPTION</h2>
+      <label class="field-label" for="titleInput">TITLE — BIG BLOCK LETTERS</label>
+      <input class="text-field" id="titleInput" type="text" value="VICE PURSUIT" maxlength="24">
+      <label class="field-label" for="subheadInput">SCRIPT SUBHEAD</label>
+      <input class="text-field" id="subheadInput" type="text" value="Coastline Nights" maxlength="32">
+      <label class="field-label" for="ribbonInput">RIBBON LINE</label>
+      <input class="text-field" id="ribbonInput" type="text" value="ONE COASTLINE · FIVE STORIES · NO CURFEW" maxlength="48">
+      <p class="hint">The title lives in its own band across the middle, so it never covers a car, a bike, a person or a face.</p>
+    </div>
+    <div class="panel-card">
+      <h2 class="section-title"><span class="step-dot">4</span> COLOUR GRADE</h2>
+      <div class="grade-list" id="gradeList"></div>
+    </div>
+    <div class="panel-card">
+      <h2 class="section-title"><span class="step-dot">5</span> POST SIZE</h2>
+      <div class="size-list" id="sizeList"></div>
+      <p class="hint">Pick a size, then export — the cover is re-laid-out for it.</p>
+    </div>
+  </section>
+</main>
 
-  <!-- Shot-mode mount: the cover alone, full-window, for screenshots. -->
-  <div class="gm-shotwrap" id="shotWrap"></div>
-
-  <script type="module" src="src/main.js"></script>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>

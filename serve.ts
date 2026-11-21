@@ -1,81 +1,49 @@
-// GOLDEN MILE — a tiny static server for app/ (Node 22, standard
-// library only), so the cover studio can be tried locally with no
-// build step and no network:
-//
-//   node serve.ts            serves app/ on http://localhost:8080
-//   node serve.ts --port 8090
-//
-// It sends the MIME types an offline web app needs, refuses any path
-// outside app/, and otherwise does nothing clever. Photos are read
-// from the visitor's own machine, never uploaded.
+// VICE PURSUIT — static file server for the cover studio.
+// Serves app/ at the root (index.html at /) so the app can be tried in
+// desktop Chrome exactly as the competition's static hosting serves it.
 
-import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { join, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(fileURLToPath(new URL('./app', import.meta.url)));
-const argv = process.argv.slice(2);
-const portFlag = argv.indexOf('--port');
-const wanted = portFlag === -1 ? 8080 : Number(argv[portFlag + 1]);
-const port = Number.isInteger(wanted) && wanted > 0 && wanted < 65536 ? wanted : 8080;
+const repoRoot = resolve(fileURLToPath(new URL('.', import.meta.url)));
+const appRoot = join(repoRoot, 'app');
+const port = Number(process.env.PORT ?? 8080);
 
-const MIME_TYPES = {
+const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
+  '.png': 'image/png',
   '.ttf': 'font/ttf',
-  '.otf': 'font/otf',
-  '.bin': 'application/octet-stream',
-  '.wasm': 'application/wasm',
-  '.wav': 'audio/wav',
-  '.mp3': 'audio/mpeg',
-  '.ogg': 'audio/ogg',
   '.txt': 'text/plain; charset=utf-8',
 };
 
-function resolveAppPath(urlPath) {
-  const decoded = decodeURIComponent(urlPath.split('?')[0]);
-  const cleaned = normalize(decoded).replace(/^(\.\.(\/|\\|$))+/, '');
-  const target = join(root, cleaned === '/' || cleaned === '' ? 'index.html' : cleaned);
-  return target === root || target.startsWith(root + sep) ? target : null;
-}
-
-const server = createServer((req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405, { 'content-type': 'text/plain' });
-    res.end('method not allowed');
-    return;
-  }
-  const target = resolveAppPath(req.url || '/');
-  if (!target) {
-    res.writeHead(403, { 'content-type': 'text/plain' });
-    res.end('forbidden');
-    return;
-  }
-  let file = target;
+const server = createServer(async (req, res) => {
   try {
-    if (statSync(file).isDirectory()) file = join(file, 'index.html');
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    let pathname = decodeURIComponent(url.pathname);
+    if (pathname === '/') pathname = '/index.html';
+    const file = join(appRoot, pathname);
+    if (!file.startsWith(appRoot)) {
+      res.writeHead(403);
+      res.end('forbidden');
+      return;
+    }
+    const data = await readFile(file);
+    res.writeHead(200, { 'content-type': mimeTypes[extname(file)] ?? 'application/octet-stream' });
+    res.end(data);
   } catch {
-    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.writeHead(404);
     res.end('not found');
-    return;
   }
-  res.writeHead(200, { 'content-type': MIME_TYPES[extname(file)] || 'application/octet-stream' });
-  createReadStream(file).pipe(res);
 });
 
 server.listen(port, () => {
-  console.log(`GOLDEN MILE app/ is on http://localhost:${port}`);
+  console.log(`VICE PURSUIT studio at http://localhost:${port}`);
 });

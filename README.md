@@ -4,16 +4,16 @@
 [![rank](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 [![reward](https://make.fun/badge/gta6-cover-art-01/sandytaztaz-hue/gta6-cover-art/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 
-A web app that turns your own photos and a caption into a GTA 6-style
-magazine cover — a big hero close-up in the centre, seven photo-realistic
-role panels around it, huge VICE PURSUIT block lettering in its own band,
-a pink script subhead, a ribbon line, a masthead strip and a COMING SOON
-bottom strip with barcode and gold BEST seal. Built for the
+Build a GTA 6-style magazine cover from your own photos and a caption:
+a big hero close-up in the centre, seven photo-realistic role panels
+around it, huge VICE PURSUIT block lettering in its own band, a pink
+script subhead, a ribbon line, a masthead strip, and a COMING SOON
+bottom strip with barcode and gold BEST seal. Made for the
 [make.fun gta6-cover-art-01 bounty](https://make.fun/bounty/gta6-cover-art-01).
-Static files under `app/`, no build step, works offline in desktop Chrome —
-every script, image and font is a file under `app/`.
+Everything lives in static files under `app/` — no build step, works
+offline in desktop Chrome, every script, image and font a file under `app/`.
 
-## The cover
+## What the cover looks like
 
 * **Hero close-up, centre** — the grey-haired insider stares out of the
   middle of the poster, with THE DRIVER, THE FIXER, THE SMUGGLER and
@@ -31,7 +31,7 @@ every script, image and font is a file under `app/`.
   you see is exactly what you download.
 * **3 export sizes** — PNG in 1080 × 1080, 1080 × 1350 and 1920 × 1080.
 
-## Use it
+## How to use it
 
 1. `node serve.ts` — opens the studio at http://localhost:8080
 2. Add photos (drop, paste, or pick files) or use the bundled samples.
@@ -46,7 +46,7 @@ every script, image and font is a file under `app/`.
 `shots.json` into `screenshots/` — the square cover first, then the
 editor with a photo loaded, then the portrait and wide covers.
 
-## Hand it in
+## Handing it in
 
 `mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts`
 

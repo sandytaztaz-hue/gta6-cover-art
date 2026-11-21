@@ -15,12 +15,12 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('./app', import.meta.url)));
-const args = process.argv.slice(2);
-const portIndex = args.indexOf('--port');
-const requested = portIndex === -1 ? 8080 : Number(args[portIndex + 1]);
-const port = Number.isInteger(requested) && requested > 0 && requested < 65536 ? requested : 8080;
+const argv = process.argv.slice(2);
+const portFlag = argv.indexOf('--port');
+const wanted = portFlag === -1 ? 8080 : Number(argv[portFlag + 1]);
+const port = Number.isInteger(wanted) && wanted > 0 && wanted < 65536 ? wanted : 8080;
 
-const MIME = {
+const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
@@ -45,7 +45,7 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
-function goldenMileSafePath(urlPath) {
+function resolveAppPath(urlPath) {
   const decoded = decodeURIComponent(urlPath.split('?')[0]);
   const cleaned = normalize(decoded).replace(/^(\.\.(\/|\\|$))+/, '');
   const target = join(root, cleaned === '/' || cleaned === '' ? 'index.html' : cleaned);
@@ -58,7 +58,7 @@ const server = createServer((req, res) => {
     res.end('method not allowed');
     return;
   }
-  const target = goldenMileSafePath(req.url || '/');
+  const target = resolveAppPath(req.url || '/');
   if (!target) {
     res.writeHead(403, { 'content-type': 'text/plain' });
     res.end('forbidden');
@@ -72,7 +72,7 @@ const server = createServer((req, res) => {
     res.end('not found');
     return;
   }
-  res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
+  res.writeHead(200, { 'content-type': MIME_TYPES[extname(file)] || 'application/octet-stream' });
   createReadStream(file).pipe(res);
 });
 

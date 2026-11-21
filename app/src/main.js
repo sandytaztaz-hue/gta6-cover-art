@@ -4,29 +4,29 @@
 // FileReader and never uploaded anywhere.
 
 import {
-  GOLDEN_MILE_TITLE,
-  GOLDEN_MILE_SCRIPT,
-  GOLDEN_MILE_RIBBON,
-  GOLDEN_MILE_TAGLINE,
-  GOLDEN_MILE_GAZETTE,
-  GOLDEN_MILE_CREDITS,
-  GOLDEN_MILE_GRADES,
-  GOLDEN_MILE_GRADE_IDS,
-  GOLDEN_MILE_SIZES,
-  goldenMileDefaultState,
-  goldenMilePanelCrop,
-  drawGoldenMileCover,
-  exportGoldenMilePng,
+  COVER_TITLE,
+  COVER_SUBHEAD,
+  COVER_RIBBON,
+  COVER_TAGLINE,
+  COVER_GAZETTE,
+  COVER_CREDITS,
+  COVER_GRADES,
+  COVER_GRADE_IDS,
+  COVER_SIZES,
+  coverDefaultState,
+  coverPanelCrop,
+  paintCover,
+  exportCoverPng,
 } from './cover.js';
 import {
-  GOLDEN_MILE_SAMPLES,
-  GOLDEN_MILE_GRADE_SWATCH,
-  readGoldenMileQuery,
-  applyGoldenMileQuery,
+  COVER_SAMPLES,
+  COVER_GRADE_SWATCH,
+  readCoverQuery,
+  applyCoverQuery,
 } from './shots.js';
 
-const query = readGoldenMileQuery(window.location.search);
-const state = applyGoldenMileQuery(goldenMileDefaultState(), query);
+const query = readCoverQuery(window.location.search);
+const state = applyCoverQuery(coverDefaultState(), query);
 let selected = 2; // the hero panel, centre of the cover
 const images = {}; // src -> loaded HTMLImageElement
 const userPhotos = [];
@@ -52,10 +52,15 @@ function loadAllPanelImages() {
   return Promise.all(state.panels.map((p) => loadImage(p.src)));
 }
 
+function hintText() {
+  const p = state.panels[selected];
+  return `Selected: ${p.role} — ${p.src.split('/').pop()}. Drag the photo to move it, scroll to zoom.`;
+}
+
 // Build the DOM cover for the current state. The structure mirrors the
 // canvas renderer in cover.js: masthead, five-column grid, title band
 // in its own zone, bottom strip, gold seal.
-function buildGoldenMileCoverEl() {
+function buildCoverEl() {
   const cover = document.createElement('div');
   cover.className = 'gm-cover';
   cover.dataset.grade = state.grade;
@@ -65,8 +70,8 @@ function buildGoldenMileCoverEl() {
   mast.className = 'gm-masthead';
   mast.innerHTML =
     '<span class="stars">★★★★★</span>' +
-    `<span class="tag">${GOLDEN_MILE_TAGLINE}</span>` +
-    `<span class="gazette">${GOLDEN_MILE_GAZETTE}</span>` +
+    `<span class="tag">${COVER_TAGLINE}</span>` +
+    `<span class="gazette">${COVER_GAZETTE}</span>` +
     '<span class="vol">VOL. 1</span>';
   cover.appendChild(mast);
 
@@ -74,7 +79,10 @@ function buildGoldenMileCoverEl() {
   grid.className = 'gm-grid';
   state.panels.forEach((panel, i) => {
     const cell = document.createElement('div');
-    cell.className = 'gm-panel' + (panel.role === 'HERO' ? ' hero' : '') + (panel.role === 'THE BOSS' ? ' boss' : '');
+    cell.className =
+      'gm-panel' +
+      (panel.role === 'HERO' ? ' hero' : '') +
+      (panel.role === 'THE BOSS' ? ' boss' : '');
     if (i === selected) cell.classList.add('selected');
     cell.dataset.index = String(i);
     const img = document.createElement('img');
@@ -83,7 +91,7 @@ function buildGoldenMileCoverEl() {
     img.draggable = false;
     // Same per-size crop the PNG renderer uses, so the preview and the
     // export always agree (portrait DRIVER is pulled back a touch).
-    const crop = goldenMilePanelCrop(panel, state.size);
+    const crop = coverPanelCrop(panel, state.size);
     img.style.objectPosition = `${crop.fx * 100}% ${crop.fy * 100}%`;
     if (panel.flip) img.style.transform = 'scaleX(-1)';
     if (crop.zoom && crop.zoom !== 1) {
@@ -104,7 +112,7 @@ function buildGoldenMileCoverEl() {
       role.textContent = panel.role;
       cell.appendChild(role);
     }
-    cell.addEventListener('pointerdown', (ev) => startGoldenMileDrag(ev, i, cell));
+    cell.addEventListener('pointerdown', (ev) => startDrag(ev, i, cell));
     grid.appendChild(cell);
   });
   cover.appendChild(grid);
@@ -129,7 +137,7 @@ function buildGoldenMileCoverEl() {
   foot.className = 'gm-foot';
   foot.innerHTML =
     '<span class="soon">—&nbsp; COMING SOON &nbsp;—</span>' +
-    `<span class="credits">${GOLDEN_MILE_CREDITS}</span>` +
+    `<span class="credits">${COVER_CREDITS}</span>` +
     '<span class="gm-barcode" aria-hidden="true"></span>';
   cover.appendChild(foot);
 
@@ -141,16 +149,13 @@ function buildGoldenMileCoverEl() {
   return cover;
 }
 
-function renderGoldenMile() {
-  coverMount.replaceChildren(buildGoldenMileCoverEl());
+function render() {
+  coverMount.replaceChildren(buildCoverEl());
   if (document.body.classList.contains('shot-cover')) {
-    shotWrap.replaceChildren(buildGoldenMileCoverEl());
+    shotWrap.replaceChildren(buildCoverEl());
   }
   const hint = $('panelHint');
-  if (hint) {
-    const p = state.panels[selected];
-    hint.textContent = `Selected: ${p.role} — ${p.src.split('/').pop()}. Drag the photo to move it, scroll to zoom.`;
-  }
+  if (hint) hint.textContent = hintText();
   document.querySelectorAll('#gradeList .gm-chip').forEach((chip) => {
     chip.classList.toggle('on', chip.dataset.grade === state.grade);
   });
@@ -161,17 +166,14 @@ function renderGoldenMile() {
 
 // ---- Panel interaction: drag to pan, wheel to zoom ----------------------
 
-function startGoldenMileDrag(ev, index, cell) {
+function startDrag(ev, index, cell) {
   ev.preventDefault();
   selected = index;
   document.querySelectorAll('.gm-panel').forEach((el, i) => {
     el.classList.toggle('selected', i === index);
   });
   const hint = $('panelHint');
-  if (hint) {
-    const p = state.panels[selected];
-    hint.textContent = `Selected: ${p.role} — ${p.src.split('/').pop()}. Drag the photo to move it, scroll to zoom.`;
-  }
+  if (hint) hint.textContent = hintText();
   const panel = state.panels[index];
   const img = cell.querySelector('img');
   const startX = ev.clientX;
@@ -187,13 +189,13 @@ function startGoldenMileDrag(ev, index, cell) {
   function up() {
     window.removeEventListener('pointermove', move);
     window.removeEventListener('pointerup', up);
-    renderGoldenMile();
+    render();
   }
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
 }
 
-function attachGoldenMileWheel() {
+function attachWheel() {
   coverMount.addEventListener(
     'wheel',
     (ev) => {
@@ -202,7 +204,7 @@ function attachGoldenMileWheel() {
       ev.preventDefault();
       const panel = state.panels[Number(cell.dataset.index)];
       panel.zoom = Math.min(2.5, Math.max(1, (panel.zoom || 1) * (ev.deltaY < 0 ? 1.12 : 0.9)));
-      renderGoldenMile();
+      render();
     },
     { passive: false },
   );
@@ -210,25 +212,25 @@ function attachGoldenMileWheel() {
 
 // ---- Controls -----------------------------------------------------------
 
-function buildGoldenMileControls() {
+function buildControls() {
   const gradeList = $('gradeList');
-  for (const id of GOLDEN_MILE_GRADE_IDS) {
-    const grade = GOLDEN_MILE_GRADES[id];
+  for (const id of COVER_GRADE_IDS) {
+    const grade = COVER_GRADES[id];
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'gm-chip';
     chip.dataset.grade = id;
     chip.innerHTML =
-      `<span class="dot" style="background:${GOLDEN_MILE_GRADE_SWATCH[id]}"></span>` +
+      `<span class="dot" style="background:${COVER_GRADE_SWATCH[id]}"></span>` +
       `<span style="flex:1">${grade.label}</span><small>grade</small>`;
     chip.addEventListener('click', () => {
       state.grade = id;
-      renderGoldenMile();
+      render();
     });
     gradeList.appendChild(chip);
   }
   const sizeList = $('sizeList');
-  for (const [id, size] of Object.entries(GOLDEN_MILE_SIZES)) {
+  for (const [id, size] of Object.entries(COVER_SIZES)) {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'gm-chip';
@@ -236,15 +238,15 @@ function buildGoldenMileControls() {
     chip.innerHTML = `<span style="flex:1">${size.label}</span><small>export</small>`;
     chip.addEventListener('click', () => {
       state.size = id;
-      renderGoldenMile();
+      render();
     });
     sizeList.appendChild(chip);
   }
 }
 
-function buildGoldenMileSamples() {
+function buildSamples() {
   const strip = $('sampleStrip');
-  for (const file of GOLDEN_MILE_SAMPLES) {
+  for (const file of COVER_SAMPLES) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'gm-sample';
@@ -260,24 +262,23 @@ function buildGoldenMileSamples() {
     btn.addEventListener('click', async () => {
       const panel = state.panels[selected];
       panel.src = 'samples/' + file;
-      const known = GOLDEN_MILE_SAMPLES.indexOf(file);
       await loadImage(panel.src);
-      renderGoldenMile();
-      refreshGoldenMileSampleMarks();
+      render();
+      refreshSampleMarks();
     });
     strip.appendChild(btn);
   }
-  refreshGoldenMileSampleMarks();
+  refreshSampleMarks();
 }
 
-function refreshGoldenMileSampleMarks() {
+function refreshSampleMarks() {
   const used = new Set(state.panels.map((p) => p.src.split('/').pop()));
   document.querySelectorAll('#sampleStrip .gm-sample').forEach((btn) => {
     btn.classList.toggle('used', used.has(btn.title));
   });
 }
 
-function addGoldenMileUserPhoto(file) {
+function addUserPhoto(file) {
   const reader = new FileReader();
   reader.onload = async () => {
     const src = String(reader.result);
@@ -288,35 +289,35 @@ function addGoldenMileUserPhoto(file) {
     panel.fy = 0.4;
     panel.zoom = 1;
     images[src] = await loadImage(src);
-    renderGoldenMile();
+    render();
   };
   reader.readAsDataURL(file);
 }
 
-function wireGoldenMileControls() {
+function wireControls() {
   $('titleInput').addEventListener('input', (e) => {
-    state.title = e.target.value.toUpperCase() || GOLDEN_MILE_TITLE;
-    renderGoldenMile();
+    state.title = e.target.value.toUpperCase() || COVER_TITLE;
+    render();
   });
   $('scriptInput').addEventListener('input', (e) => {
-    state.script = e.target.value || GOLDEN_MILE_SCRIPT;
-    renderGoldenMile();
+    state.script = e.target.value || COVER_SUBHEAD;
+    render();
   });
   $('ribbonInput').addEventListener('input', (e) => {
-    state.ribbon = e.target.value.toUpperCase() || GOLDEN_MILE_RIBBON;
-    renderGoldenMile();
+    state.ribbon = e.target.value.toUpperCase() || COVER_RIBBON;
+    render();
   });
   $('flipBtn').addEventListener('click', () => {
     const p = state.panels[selected];
     p.flip = !p.flip;
-    renderGoldenMile();
+    render();
   });
   $('faceBtn').addEventListener('click', () => {
     const p = state.panels[selected];
     p.fx = 0.5;
     p.fy = 0.35;
     p.zoom = 1;
-    renderGoldenMile();
+    render();
   });
   $('swapBtn').addEventListener('click', () => {
     const next = (selected + 1) % state.panels.length;
@@ -326,18 +327,18 @@ function wireGoldenMileControls() {
     [a.fx, b.fx] = [b.fx, a.fx];
     [a.fy, b.fy] = [b.fy, a.fy];
     selected = next;
-    renderGoldenMile();
-    refreshGoldenMileSampleMarks();
+    render();
+    refreshSampleMarks();
   });
   $('resetBtn').addEventListener('click', () => {
-    const fresh = goldenMileDefaultState().panels[selected];
+    const fresh = coverDefaultState().panels[selected];
     state.panels[selected] = { ...fresh };
-    renderGoldenMile();
-    refreshGoldenMileSampleMarks();
+    render();
+    refreshSampleMarks();
   });
   $('addPhotosBtn').addEventListener('click', () => $('fileInput').click());
   $('fileInput').addEventListener('change', (e) => {
-    for (const f of e.target.files) addGoldenMileUserPhoto(f);
+    for (const f of e.target.files) addUserPhoto(f);
     e.target.value = '';
   });
   const drop = $('dropZone');
@@ -349,11 +350,11 @@ function wireGoldenMileControls() {
   drop.addEventListener('drop', (e) => {
     e.preventDefault();
     drop.classList.remove('over');
-    for (const f of e.dataTransfer.files) addGoldenMileUserPhoto(f);
+    for (const f of e.dataTransfer.files) addUserPhoto(f);
   });
   window.addEventListener('paste', (e) => {
     for (const item of e.clipboardData?.items || []) {
-      if (item.type.startsWith('image/')) addGoldenMileUserPhoto(item.getAsFile());
+      if (item.type.startsWith('image/')) addUserPhoto(item.getAsFile());
     }
   });
   const exporters = [
@@ -368,8 +369,8 @@ function wireGoldenMileControls() {
       btn.textContent = 'Rendering…';
       try {
         await loadAllPanelImages();
-        const blob = await exportGoldenMilePng(state, images, sizeId);
-        const size = GOLDEN_MILE_SIZES[sizeId];
+        const blob = await exportCoverPng(state, images, sizeId);
+        const size = COVER_SIZES[sizeId];
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `vice-pursuit-${size.width}x${size.height}.png`;
@@ -377,7 +378,7 @@ function wireGoldenMileControls() {
         setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       } finally {
         btn.disabled = false;
-        btn.textContent = `⬇ PNG ${GOLDEN_MILE_SIZES[sizeId].width} × ${GOLDEN_MILE_SIZES[sizeId].height}`;
+        btn.textContent = `⬇ PNG ${COVER_SIZES[sizeId].width} × ${COVER_SIZES[sizeId].height}`;
       }
     });
   }
@@ -385,26 +386,26 @@ function wireGoldenMileControls() {
 
 // ---- Boot ---------------------------------------------------------------
 
-async function bootGoldenMile() {
+async function boot() {
   if (query.shot === 'cover') {
     document.body.classList.add('shot-cover');
     document.title = 'VICE PURSUIT — cover';
   }
-  buildGoldenMileControls();
-  buildGoldenMileSamples();
-  wireGoldenMileControls();
-  attachGoldenMileWheel();
+  buildControls();
+  buildSamples();
+  wireControls();
+  attachWheel();
   await loadAllPanelImages();
   await document.fonts.ready;
-  renderGoldenMile();
+  render();
   // Keep the canvas renderer honest: it must be able to draw the same
   // cover the DOM shows, so warm its image cache too.
   if (query.shot === 'cover') {
     const canvas = document.createElement('canvas');
     canvas.width = 32;
     canvas.height = 32;
-    drawGoldenMileCover(canvas.getContext('2d'), state, images, 32, 32);
+    paintCover(canvas.getContext('2d'), state, images, 32, 32);
   }
 }
 
-bootGoldenMile();
+boot();

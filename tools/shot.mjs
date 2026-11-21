@@ -65,7 +65,7 @@ function shotWithChrome(shot) {
   });
 }
 
-async function runGoldenMileShots() {
+async function runShots() {
   const nodeBin = process.execPath;
   const server = spawn(nodeBin, ['serve.ts', '--port', String(port)], { cwd: repo, stdio: 'ignore' });
   try {
@@ -97,7 +97,7 @@ async function runGoldenMileShots() {
   }
 }
 
-runGoldenMileShots().catch((err) => {
+runShots().catch((err) => {
   console.error(err);
   process.exit(1);
 });

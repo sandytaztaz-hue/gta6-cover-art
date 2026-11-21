@@ -1,24 +1,30 @@
-// GOLDEN MILE — cover model, geometry and PNG renderer for the
-// VICE PURSUIT cover studio. One cover is a magazine collage: a masthead
-// strip, a five-column photo grid with one big hero close-up in the
-// centre, a title band of its own across the middle, and a bottom strip
-// with COMING SOON, credits, a barcode and a gold BEST seal.
+// GOLDEN MILE — the cover itself: what a VICE PURSUIT cover is, where
+// everything sits, and how it gets painted onto a canvas.
 //
-// The same geometry drives the live DOM preview (main.js) and the PNG
-// export below, so what you see is exactly what you download.
+// A cover is a magazine collage. Top: a thin masthead strip. Below it a
+// five-column photo grid, two rows tall, with one big hero close-up in
+// the centre column spanning both rows and one tall panel filling the
+// right-hand column. Across the middle, low on the hero's chest and
+// clear of his chin, a title band of its own: the big block title, a
+// pink script subhead underneath it, and a gold ribbon line. Bottom:
+// a COMING SOON strip with credits and a barcode, plus a gold BEST
+// SELLER seal overlapping the grid's lower-right corner.
+//
+// Two render paths share this file. The live DOM preview (main.js)
+// reads the same tables and the same layout fractions, so the editor
+// and the exported PNG can never drift apart.
 
-export const GOLDEN_MILE_TITLE = 'VICE PURSUIT';
-export const GOLDEN_MILE_SCRIPT = 'Coastline Nights';
-export const GOLDEN_MILE_RIBBON = 'ONE COASTLINE · FIVE STORIES · NO CURFEW';
-export const GOLDEN_MILE_TAGLINE = 'THE HOTTEST RIDE OF THE YEAR';
-export const GOLDEN_MILE_GAZETTE = 'VICE CITY GAZETTE';
-export const GOLDEN_MILE_CREDITS =
-  'GOLDEN MILE PICTURES  ·  A VICE CITY STORY';
+export const COVER_TITLE = 'VICE PURSUIT';
+export const COVER_SUBHEAD = 'Coastline Nights';
+export const COVER_RIBBON = 'ONE COASTLINE · FIVE STORIES · NO CURFEW';
+export const COVER_TAGLINE = 'THE HOTTEST RIDE OF THE YEAR';
+export const COVER_GAZETTE = 'VICE CITY GAZETTE';
+export const COVER_CREDITS = 'GOLDEN MILE PICTURES  ·  A VICE CITY STORY';
 
-// The eight Golden Mile pictures: the hero close-up in the centre plus
-// one photo-realistic panel per role. fx/fy is the face (or subject)
-// point the crop keeps centred, as a fraction of the photo.
-export const GOLDEN_MILE_PANELS = [
+// The eight photos that make one cover: the hero in the middle and one
+// panel per role. fx/fy marks the point the crop centres on — a face,
+// a car, a bike — as a fraction of the photo's own width/height.
+export const COVER_PANELS = [
   { role: 'THE DRIVER', file: 'vice-driver.jpg', fx: 0.8, fy: 0.38 },
   { role: 'THE FIXER', file: 'vice-fixer.jpg', fx: 0.74, fy: 0.22 },
   { role: 'HERO', file: 'crime-insider.jpg', fx: 0.56, fy: 0.4 },
@@ -29,24 +35,24 @@ export const GOLDEN_MILE_PANELS = [
   { role: 'THE LOOKOUT', file: 'crime-lookout.jpg', fx: 0.5, fy: 0.28 },
 ];
 
-// Grid placement of the eight panels, in a 5-column by 2-row grid.
-// The hero sits in the middle column and spans both rows; the boss
-// fills the whole right-hand column. Every other role takes one cell.
-export const GOLDEN_MILE_GRID = {
-  'THE DRIVER': { col: 1, row: 1, colSpan: 1, rowSpan: 1 },
-  'THE FIXER': { col: 2, row: 1, colSpan: 1, rowSpan: 1 },
-  HERO: { col: 3, row: 1, colSpan: 1, rowSpan: 2 },
-  'THE SMUGGLER': { col: 4, row: 1, colSpan: 1, rowSpan: 1 },
-  'THE BOSS': { col: 5, row: 1, colSpan: 1, rowSpan: 2 },
-  'THE RIDER': { col: 1, row: 2, colSpan: 1, rowSpan: 1 },
-  'THE GETAWAY': { col: 2, row: 2, colSpan: 1, rowSpan: 1 },
-  'THE LOOKOUT': { col: 4, row: 2, colSpan: 1, rowSpan: 1 },
+// Where each panel lives in the 5 x 2 grid. Columns and rows are
+// 1-based. The hero takes the whole centre column; the boss takes the
+// whole right-hand column; everyone else takes a single cell.
+export const COVER_GRID = {
+  'THE DRIVER': { col: 1, row: 1, cols: 1, rows: 1 },
+  'THE FIXER': { col: 2, row: 1, cols: 1, rows: 1 },
+  HERO: { col: 3, row: 1, cols: 1, rows: 2 },
+  'THE SMUGGLER': { col: 4, row: 1, cols: 1, rows: 1 },
+  'THE BOSS': { col: 5, row: 1, cols: 1, rows: 2 },
+  'THE RIDER': { col: 1, row: 2, cols: 1, rows: 1 },
+  'THE GETAWAY': { col: 2, row: 2, cols: 1, rows: 1 },
+  'THE LOOKOUT': { col: 4, row: 2, cols: 1, rows: 1 },
 };
 
-// Five colour grades. `filter` is a canvas/DOM filter string, `wash`
-// a translucent tint painted over each photo, `title` the two stops of
-// the title gradient for this grade.
-export const GOLDEN_MILE_GRADES = {
+// Five colour grades. `filter` is a CSS/canvas filter string applied to
+// each photo, `wash` a translucent tint painted over it, and `title`
+// the two stops of the big title gradient for that grade.
+export const COVER_GRADES = {
   golden: {
     label: 'Golden Hour',
     filter: 'saturate(1.28) contrast(1.07) sepia(0.26) brightness(1.02)',
@@ -79,54 +85,53 @@ export const GOLDEN_MILE_GRADES = {
   },
 };
 
-export const GOLDEN_MILE_GRADE_IDS = Object.keys(GOLDEN_MILE_GRADES);
+export const COVER_GRADE_IDS = Object.keys(COVER_GRADES);
 
 // The three post sizes the bounty asks for.
-export const GOLDEN_MILE_SIZES = {
+export const COVER_SIZES = {
   square: { label: 'Square · 1080 × 1080', width: 1080, height: 1080 },
   portrait: { label: 'Portrait · 1080 × 1350', width: 1080, height: 1350 },
   landscape: { label: 'Wide · 1920 × 1080', width: 1920, height: 1080 },
 };
 
-// Per-size crop overrides, as deltas on a panel's own fx/fy/zoom. The
-// portrait DRIVER panel is much narrower than the square one, so the
-// default face point (fx 0.8) puts her nose on the panel's left edge;
-// in portrait only, pull the crop back a touch so her whole face sits
-// inside the frame with margin. Deltas (not absolutes) so dragging a
-// panel in the editor still moves it, and so every other panel and
-// size keeps its default crop exactly.
-export const GOLDEN_MILE_CROP_OVERRIDES = {
+// Per-size crop tweaks, as deltas on a panel's own fx/fy/zoom. The
+// portrait DRIVER cell is much narrower than the square one, so her
+// default face point (fx 0.8) puts her nose right on the cell's left
+// edge; in portrait only, pull the crop back a touch so her whole face
+// sits inside the frame with margin. Deltas, not absolutes, so dragging
+// a panel in the editor still moves it and every other panel and size
+// keeps its default crop exactly.
+export const COVER_CROP_TWEAKS = {
   portrait: {
     // -0.02 moved her nose from cut to ~3 px inside the edge (measured
     // on the render); -0.04 left the nose ~3 px and the lips ~2 px from
     // the edge — visible but tighter than the square renders. -0.05
-    // puts the nose ~10 px inside, matching images 1/2/4, with the ear
-    // still ~13 px clear of the right edge.
+    // puts the nose ~10 px inside, matching the square renders, with
+    // the ear still ~13 px clear of the right edge.
     'THE DRIVER': { fx: -0.05 },
   },
 };
 
-// Resolve the effective { fx, fy, zoom } for one panel at one post size.
-// Both render paths (DOM preview in main.js, PNG export below) must call
-// this, so the screenshot and the exported PNG always agree.
-export function goldenMilePanelCrop(panel, sizeId) {
-  const over = GOLDEN_MILE_CROP_OVERRIDES[sizeId]?.[panel.role];
+// The crop that actually applies to one panel at one post size.
+export function coverPanelCrop(panel, sizeId) {
+  const tweak = COVER_CROP_TWEAKS[sizeId]?.[panel.role];
+  const clamp01 = (v) => Math.min(1, Math.max(0, v));
   return {
-    fx: Math.min(1, Math.max(0, panel.fx + (over?.fx ?? 0))),
-    fy: Math.min(1, Math.max(0, panel.fy + (over?.fy ?? 0))),
-    zoom: (panel.zoom || 1) * (over?.zoom ?? 1),
+    fx: clamp01(panel.fx + (tweak?.fx ?? 0)),
+    fy: clamp01(panel.fy + (tweak?.fy ?? 0)),
+    zoom: (panel.zoom || 1) * (tweak?.zoom ?? 1),
   };
 }
 
-// Fresh default state: the Golden Mile cover, golden grade, square.
-export function goldenMileDefaultState() {
+// A fresh cover: the Golden Mile defaults, golden grade, square size.
+export function coverDefaultState() {
   return {
-    title: GOLDEN_MILE_TITLE,
-    script: GOLDEN_MILE_SCRIPT,
-    ribbon: GOLDEN_MILE_RIBBON,
+    title: COVER_TITLE,
+    script: COVER_SUBHEAD,
+    ribbon: COVER_RIBBON,
     grade: 'golden',
     size: 'square',
-    panels: GOLDEN_MILE_PANELS.map((p) => ({
+    panels: COVER_PANELS.map((p) => ({
       role: p.role,
       src: 'samples/' + p.file,
       fx: p.fx,
@@ -139,7 +144,7 @@ export function goldenMileDefaultState() {
 
 // Cover geometry, all in fractions of the cover width/height, so the
 // DOM preview and the canvas export agree exactly.
-export function goldenMileLayout(sizeId) {
+export function coverLayout(sizeId) {
   const wide = sizeId === 'landscape';
   const tall = sizeId === 'portrait';
   return {
@@ -162,35 +167,34 @@ export function goldenMileLayout(sizeId) {
   };
 }
 
-// Rectangle of one grid cell, in pixels, for a cover of W x H.
-export function goldenMileCellRect(layout, W, H, role) {
+// Pixel rectangle of one grid cell on a cover of W x H.
+export function coverCellRect(layout, W, H, role) {
   const g = layout.grid;
-  const cell = GOLDEN_MILE_GRID[role];
+  const cell = COVER_GRID[role];
   const colW = (i) => g.cols[i] * g.w * W;
   const rowH = (g.h * H) / 2;
   let x = g.x * W;
   for (let i = 0; i < cell.col - 1; i += 1) x += colW(i) + g.gap * W;
   const y = g.y * H + (cell.row - 1) * (rowH + g.gap * H);
   let w = 0;
-  for (let i = 0; i < cell.colSpan; i += 1) w += colW(cell.col - 1 + i);
-  w += (cell.colSpan - 1) * g.gap * W;
-  const h = rowH * cell.rowSpan + (cell.rowSpan - 1) * g.gap * H;
+  for (let i = 0; i < cell.cols; i += 1) w += colW(cell.col - 1 + i);
+  w += (cell.cols - 1) * g.gap * W;
+  const h = rowH * cell.rows + (cell.rows - 1) * g.gap * H;
   return { x, y, w, h };
 }
 
-// ---- PNG renderer -------------------------------------------------------
+// ---- Canvas painting ----------------------------------------------------
 
-const TITLE_FONT = '"Anton", "Archivo Black", sans-serif';
+const BLOCK_FONT = '"Anton", "Archivo Black", sans-serif';
 const LABEL_FONT = '"Archivo Black", sans-serif';
 const SCRIPT_FONT = '"Great Vibes", cursive';
 
-// Draw one photo into its cell, cover-fitting around the face point.
-function drawGoldenMilePhoto(ctx, img, rect, panel, grade, sizeId) {
-  const crop = goldenMilePanelCrop(panel, sizeId);
+// Paint one photo into its cell, cover-fitting around the face point.
+function paintPhoto(ctx, img, rect, panel, grade, sizeId) {
+  const crop = coverPanelCrop(panel, sizeId);
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const zoom = crop.zoom || 1;
-  const scale = Math.max(rect.w / iw, rect.h / ih) * zoom;
+  const scale = Math.max(rect.w / iw, rect.h / ih) * (crop.zoom || 1);
   const dw = iw * scale;
   const dh = ih * scale;
   // Keep the face point at the cell centre as far as the photo allows.
@@ -216,48 +220,47 @@ function drawGoldenMilePhoto(ctx, img, rect, panel, grade, sizeId) {
   ctx.fillStyle = grade.wash;
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
   ctx.restore();
-  // Thin gold frame + role chip, bottom-left of the panel.
+  // Thin gold frame, then the role chip at the panel's bottom-left.
   ctx.strokeStyle = 'rgba(255, 210, 90, 0.85)';
   ctx.lineWidth = Math.max(1.5, rect.w * 0.008);
   ctx.strokeRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
-  if (panel.role !== 'HERO') {
-    const fs = Math.max(11, rect.w * 0.085);
-    ctx.font = `${fs}px ${LABEL_FONT}`;
-    const tw = ctx.measureText(panel.role).width;
-    const pad = fs * 0.55;
-    const bx = rect.x + rect.w * 0.04;
-    // THE BOSS fills the bottom-right corner of the grid, so a
-    // bottom-left chip would sit under the gold BEST SELLER seal (the
-    // seal spans the panel's whole bottom-left corner) and the ribbon
-    // bar leaves no gap above the seal either. Its chip goes top-left
-    // instead — same pill, same gold text, fully visible.
-    const by =
-      panel.role === 'THE BOSS'
-        ? rect.y + rect.h * 0.04
-        : rect.y + rect.h - fs * 2.1;
-    ctx.fillStyle = 'rgba(10, 4, 12, 0.88)';
-    ctx.fillRect(bx, by, tw + pad * 2, fs * 1.7);
-    ctx.fillStyle = '#ffd23e';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(panel.role, bx + pad, by + fs * 0.85);
-  }
+  if (panel.role === 'HERO') return;
+  const fs = Math.max(11, rect.w * 0.085);
+  ctx.font = `${fs}px ${LABEL_FONT}`;
+  const tw = ctx.measureText(panel.role).width;
+  const pad = fs * 0.55;
+  const bx = rect.x + rect.w * 0.04;
+  // THE BOSS fills the bottom-right corner of the grid, so a
+  // bottom-left chip would sit under the gold BEST SELLER seal (the
+  // seal spans the panel's whole bottom-left corner) and the ribbon
+  // bar leaves no gap above the seal either. Its chip goes top-left
+  // instead — same pill, same gold text, fully visible.
+  const by =
+    panel.role === 'THE BOSS'
+      ? rect.y + rect.h * 0.04
+      : rect.y + rect.h - fs * 2.1;
+  ctx.fillStyle = 'rgba(10, 4, 12, 0.88)';
+  ctx.fillRect(bx, by, tw + pad * 2, fs * 1.7);
+  ctx.fillStyle = '#ffd23e';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(panel.role, bx + pad, by + fs * 0.85);
 }
 
-function drawGoldenMileBarcode(ctx, x, y, w, h) {
+function paintBarcode(ctx, x, y, w, h) {
   ctx.fillStyle = '#f5f0e6';
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#14100c';
   let bx = x + w * 0.06;
   const bars = [3, 1, 2, 1, 1, 3, 2, 2, 1, 1, 4, 1, 2, 3, 1, 2, 1, 1, 3, 2];
   for (const b of bars) {
-    const bw = (w * 0.028) * b;
+    const bw = w * 0.028 * b;
     ctx.fillRect(bx, y + h * 0.08, bw, h * 0.72);
     bx += bw + w * 0.02;
     if (bx > x + w * 0.94) break;
   }
 }
 
-function drawGoldenMileSeal(ctx, cx, cy, r) {
+function paintSeal(ctx, cx, cy, r) {
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -285,11 +288,11 @@ function drawGoldenMileSeal(ctx, cx, cy, r) {
   ctx.restore();
 }
 
-// Draw the whole Golden Mile cover onto ctx at W x H.
+// Paint the whole cover onto ctx at W x H.
 // `images` maps a panel src to a loaded HTMLImageElement.
-export function drawGoldenMileCover(ctx, state, images, W, H) {
-  const grade = GOLDEN_MILE_GRADES[state.grade] || GOLDEN_MILE_GRADES.golden;
-  const layout = goldenMileLayout(state.size);
+export function paintCover(ctx, state, images, W, H) {
+  const grade = COVER_GRADES[state.grade] || COVER_GRADES.golden;
+  const layout = coverLayout(state.size);
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#160a12';
   ctx.fillRect(0, 0, W, H);
@@ -298,7 +301,7 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   for (const panel of state.panels) {
     const img = images[panel.src];
     if (!img) continue;
-    drawGoldenMilePhoto(ctx, img, goldenMileCellRect(layout, W, H, panel.role), panel, grade, state.size);
+    paintPhoto(ctx, img, coverCellRect(layout, W, H, panel.role), panel, grade, state.size);
   }
 
   // Masthead strip.
@@ -313,14 +316,13 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   ctx.fillText('★★★★★', W * 0.018, mh * 0.52);
   ctx.fillStyle = '#f5f0e6';
   ctx.font = `${mfs * 0.92}px ${LABEL_FONT}`;
-  ctx.fillText(GOLDEN_MILE_TAGLINE, W * 0.115, mh * 0.52);
+  ctx.fillText(COVER_TAGLINE, W * 0.115, mh * 0.52);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ff7ab8';
-  ctx.fillText(GOLDEN_MILE_GAZETTE, W * 0.62, mh * 0.52);
+  ctx.fillText(COVER_GAZETTE, W * 0.62, mh * 0.52);
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#14100c';
-  const volW = W * 0.075;
   ctx.fillStyle = '#ffd23e';
+  const volW = W * 0.075;
   ctx.fillRect(W * 0.915, mh * 0.18, volW, mh * 0.64);
   ctx.fillStyle = '#14100c';
   ctx.font = `${mfs * 0.85}px ${LABEL_FONT}`;
@@ -343,7 +345,7 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   grad.addColorStop(1, grade.title[1]);
   ctx.textAlign = 'center';
   const titleSize = Math.min(W * 0.115, bandH * 0.52);
-  ctx.font = `${titleSize}px ${TITLE_FONT}`;
+  ctx.font = `${titleSize}px ${BLOCK_FONT}`;
   ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
   ctx.shadowBlur = titleSize * 0.12;
   ctx.shadowOffsetY = titleSize * 0.05;
@@ -400,27 +402,44 @@ export function drawGoldenMileCover(ctx, state, images, W, H) {
   ctx.fillStyle = 'rgba(245, 240, 230, 0.75)';
   ctx.font = `${Math.max(9, footH * 0.16)}px ${LABEL_FONT}`;
   ctx.textAlign = 'center';
-  ctx.fillText(GOLDEN_MILE_CREDITS, W * 0.5, footY + footH * 0.52);
+  ctx.fillText(COVER_CREDITS, W * 0.5, footY + footH * 0.52);
   ctx.textAlign = 'left';
-  drawGoldenMileBarcode(ctx, W * 0.86, footY + footH * 0.14, W * 0.115, footH * 0.72);
+  paintBarcode(ctx, W * 0.86, footY + footH * 0.14, W * 0.115, footH * 0.72);
 
   // Gold BEST seal, overlapping the bottom-right of the grid.
-  drawGoldenMileSeal(
-    ctx,
-    layout.seal.x * W,
-    layout.seal.y * H,
-    layout.seal.r * W,
-  );
+  paintSeal(ctx, layout.seal.x * W, layout.seal.y * H, layout.seal.r * W);
 }
 
 // Render the cover to a PNG blob at one of the three post sizes.
-export async function exportGoldenMilePng(state, images, sizeId) {
-  const size = GOLDEN_MILE_SIZES[sizeId] || GOLDEN_MILE_SIZES.square;
+export async function exportCoverPng(state, images, sizeId) {
+  const size = COVER_SIZES[sizeId] || COVER_SIZES.square;
   const canvas = document.createElement('canvas');
   canvas.width = size.width;
   canvas.height = size.height;
   const ctx = canvas.getContext('2d');
   const renderState = { ...state, size: sizeId };
-  drawGoldenMileCover(ctx, renderState, images, size.width, size.height);
+  paintCover(ctx, renderState, images, size.width, size.height);
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
+
+// Backwards-compatible names for the earlier revisions.
+export {
+  COVER_TITLE as GOLDEN_MILE_TITLE,
+  COVER_SUBHEAD as GOLDEN_MILE_SCRIPT,
+  COVER_RIBBON as GOLDEN_MILE_RIBBON,
+  COVER_TAGLINE as GOLDEN_MILE_TAGLINE,
+  COVER_GAZETTE as GOLDEN_MILE_GAZETTE,
+  COVER_CREDITS as GOLDEN_MILE_CREDITS,
+  COVER_PANELS as GOLDEN_MILE_PANELS,
+  COVER_GRID as GOLDEN_MILE_GRID,
+  COVER_GRADES as GOLDEN_MILE_GRADES,
+  COVER_GRADE_IDS as GOLDEN_MILE_GRADE_IDS,
+  COVER_SIZES as GOLDEN_MILE_SIZES,
+  COVER_CROP_TWEAKS as GOLDEN_MILE_CROP_OVERRIDES,
+  coverPanelCrop as goldenMilePanelCrop,
+  coverDefaultState as goldenMileDefaultState,
+  coverLayout as goldenMileLayout,
+  coverCellRect as goldenMileCellRect,
+  paintCover as drawGoldenMileCover,
+  exportCoverPng as exportGoldenMilePng,
+};
